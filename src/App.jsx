@@ -160,7 +160,7 @@ return(<div style={{fontFamily:"'Plus Jakarta Sans',sans-serif",minHeight:"100vh
 </div></div>);}
 
 // ══════ SLIP DETAIL ══════
-function SlipDetail({emp,onBack,onUpdate}){
+function SlipDetail({emp,onBack,onUpdate,S,T}){
   const s=emp.slip||mkSlip();const[form,setForm]=useState({...s});const[slTab,setSlTab]=useState("current");const[kbF,setKbF]=useState({jumlah:"",ket:""});
   const c=calcSlip(form);const sB=emp.saldo||0;const harusBayar=c.gajiBersih+sB;const dibayar=form.dibayarkan||0;const saldoBaru=harusBayar-dibayar;const sKA=Math.max(0,(emp.kasbon||0)-form.potKasbon);
   const sF=(k,v)=>setForm({...form,[k]:NM(v)});const saved=JSON.stringify(form)===JSON.stringify(s);
@@ -289,8 +289,8 @@ function MainApp({account:acc,onLogout,appData,setAppData,onSave}){
 
   const Top=({t})=>(<header style={S.topbar}><div style={{display:"flex",alignItems:"center",gap:10}}><button style={S.menuBtn} onClick={()=>setSideOpen(true)}>{I.menu}</button><h2 style={S.pageTitle}>{t}</h2>{saving&&<span style={{fontSize:10,color:"#27ae60",display:"flex",alignItems:"center",gap:4}}>{I.cloud} Menyimpan...</span>}</div><div style={S.topClock}><span style={S.topTime}>{fmtJam(now)}</span><span style={S.topDate}>{fmtTgl(now)}</span></div></header>);
 
-  if(detP){const p=projects.find(x=>x.id===detP);if(p)return(<div style={S.shell}><style>{gCSS}</style><Side/><div style={S.content}><Top t="Detail Proyek"/><main style={S.main}><PD p={p} onBack={()=>setDetP(null)} onU={u=>setProjects(projects.map(x=>x.id===u.id?u:x))}/></main></div></div>)}
-  if(slipE){const e=employees.find(x=>x.id===slipE);if(e)return(<div style={S.shell}><style>{gCSS}</style><Side/><div style={S.content}><Top t="Slip Gaji"/><main style={S.main}><SlipDetail emp={e} onBack={()=>setSlipE(null)} onUpdate={u=>setEmployees(employees.map(x=>x.id===u.id?u:x))}/></main></div></div>)}
+  if(detP){const p=projects.find(x=>x.id===detP);if(p)return(<div style={S.shell}><style>{gCSS}</style><Side/><div style={S.content}><Top t="Detail Proyek"/><main style={S.main}><PD p={p} onBack={()=>setDetP(null)} onU={u=>setProjects(projects.map(x=>x.id===u.id?u:x))} S={S} T={T}/></main></div></div>)}
+  if(slipE){const e=employees.find(x=>x.id===slipE);if(e)return(<div style={S.shell}><style>{gCSS}</style><Side/><div style={S.content}><Top t="Slip Gaji"/><main style={S.main}><SlipDetail emp={e} onBack={()=>setSlipE(null)} onUpdate={u=>setEmployees(employees.map(x=>x.id===u.id?u:x))} S={S} T={T}/></main></div></div>)}
 
   return(<div style={S.shell}><style>{gCSS}</style><Side/><div style={S.content}><Top t={navs.find(n=>n.id===tab)?.lb}/>
   <main style={S.main}>
@@ -512,7 +512,7 @@ function MainApp({account:acc,onLogout,appData,setAppData,onSave}){
 }
 
 // ── Project Detail ──
-function PD({p,onBack,onU}){const[pcF,setPcF]=useState({jumlah:"",ket:""});const[err,setErr]=useState("");const c=cP(p);const pct=p.anggaran>0?(c.totalCair/p.anggaran)*100:0;let run=p.anggaran;
+function PD({p,onBack,onU,S,T}){const[pcF,setPcF]=useState({jumlah:"",ket:""});const[err,setErr]=useState("");const c=cP(p);const pct=p.anggaran>0?(c.totalCair/p.anggaran)*100:0;let run=p.anggaran;
 return(<div>
   <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14,flexWrap:"wrap"}}><button style={S.btnGhost} onClick={onBack}>{I.back} Kembali</button><div style={{flex:1,minWidth:140}}><h3 style={{fontSize:16,fontWeight:700,color:"#b8b2ff"}}>{p.name}</h3></div><button style={{...S.btnPri,background:"#e74c3c",gap:5}} onClick={()=>printPc(p)}>{I.pdf} PDF</button></div>
   <div style={{...S.card,border:"2px solid #6c63ff"}}><div style={{fontSize:13,fontWeight:700,color:"#b8b2ff",marginBottom:10,paddingBottom:6,borderBottom:"1px solid rgba(255,255,255,0.06)"}}>Neraca</div>{[["Anggaran",fmtRp(p.anggaran),"#1a1a1a"],["Dicairkan","- "+fmtRp(c.totalCair),"#c0392b"]].map(([l,v,cl])=>(<div key={l} style={{display:"flex",justifyContent:"space-between",padding:"4px 0",fontSize:13,color:cl}}><span>{l}</span><span style={{fontWeight:700}}>{v}</span></div>))}<div style={{height:2,background:"#1a3c34",margin:"6px 0"}}/><div style={{display:"flex",justifyContent:"space-between",padding:"4px 0",fontSize:15,fontWeight:700,color:c.sisaAnggaran>=0?"#27ae60":"#c0392b"}}><span>Sisa</span><span>{fmtRp(c.sisaAnggaran)}</span></div></div>
