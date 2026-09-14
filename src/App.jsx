@@ -30,6 +30,15 @@ const I={home:<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke
 
 const ACCTS=[{username:"admin",password:"admin123",nama:"Administrator",role:"Admin"},{username:"bendahara",password:"bend123",nama:"Bendahara RT",role:"Bendahara"}];
 
+// ── Kebab Menu (3 dots) ──
+function KebabMenu({items}){
+  const[open,setOpen]=useState(false);const ref=useRef(null);
+  useEffect(()=>{if(!open)return;const h=e=>{if(ref.current&&!ref.current.contains(e.target))setOpen(false)};document.addEventListener("mousedown",h);return()=>document.removeEventListener("mousedown",h)},[open]);
+  return(<div ref={ref} style={{position:"relative",display:"inline-flex"}}><button onClick={()=>setOpen(!open)} style={{background:"none",border:"none",cursor:"pointer",padding:"4px 6px",borderRadius:4,color:"#666",fontSize:18,lineHeight:1,fontWeight:700,letterSpacing:1}}>⋮</button>
+    {open&&<div style={{position:"absolute",right:0,top:"100%",background:"#fff",borderRadius:8,boxShadow:"0 4px 16px rgba(0,0,0,0.15)",border:"1px solid #e8e8e8",zIndex:200,minWidth:130,overflow:"hidden"}}>{items.map((it,i)=>(<button key={i} onClick={()=>{setOpen(false);it.onClick()}} style={{display:"flex",alignItems:"center",gap:8,width:"100%",padding:"9px 14px",border:"none",background:"none",cursor:"pointer",fontSize:12,fontWeight:500,color:it.danger?"#c0392b":"#333",borderBottom:i<items.length-1?"1px solid #f0f0f0":"none",fontFamily:"inherit"}} onMouseEnter={e=>e.target.style.background="#f8f8f8"} onMouseLeave={e=>e.target.style.background="none"}>{it.icon}{it.label}</button>))}</div>}
+  </div>);
+}
+
 const defaultData=()=>({
   projects:[
     {id:uid(),name:"Renovasi Asrama Putra",anggaran:25000000,pencairan:[{id:uid(),tahap:1,jumlah:10000000,tgl:fmtShort(new Date(2026,0,15)),status:"Selesai",ket:"Material"},{id:uid(),tahap:2,jumlah:8000000,tgl:fmtShort(new Date(2026,2,1)),status:"Sudah Dilaporkan",ket:"Upah tukang"},{id:uid(),tahap:3,jumlah:4000000,tgl:fmtShort(new Date(2026,5,10)),status:"Sudah Cair",ket:"Cat"},{id:uid(),tahap:4,jumlah:3000000,tgl:"",status:"Belum Cair",ket:"Sisa"}]},
@@ -49,34 +58,65 @@ const gCSS=`@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+S
 
 // ── PDF Slip ──
 function printSlip(emp,s){const c=calcSlip(s);const sB=emp.saldo||0;const harusBayar=c.gajiBersih+sB;const dibayar=s.dibayarkan||0;const saldoBaru=harusBayar-dibayar;const sK=Math.max(0,(emp.kasbon||0)-s.potKasbon);const now=new Date();
-const html=`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Slip Gaji-${emp.nama}</title><style>@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Plus Jakarta Sans',sans-serif;color:#1a1a1a;padding:32px;font-size:12px;line-height:1.5;max-width:560px;margin:0 auto}.hdr{text-align:center;margin-bottom:18px;padding-bottom:12px;border-bottom:3px solid #1a3c34}.hdr h1{font-size:16px;color:#1a3c34}.hdr .sub{font-size:11px;color:#888;margin-top:2px}.info{display:flex;justify-content:space-between;margin-bottom:16px;padding:10px 14px;background:#f8faf9;border-radius:6px;font-size:11px;line-height:1.7}.sec{font-size:12px;font-weight:700;color:#1a3c34;padding:4px 0;border-bottom:2px solid #e0e0e0;margin:12px 0 6px}.row{display:flex;justify-content:space-between;padding:5px 0;font-size:11px}.row .v{font-weight:600}.row.sub{padding-left:16px;color:#888;font-size:10px}.row.sub .v{font-weight:400}.tot{background:#f4f7f6;border-radius:6px;padding:8px 14px;margin:6px 0}.tot .row{font-weight:700;font-size:12px}.grand{background:linear-gradient(135deg,#1a3c34,#2d6a5a);border-radius:8px;padding:12px 16px;margin:10px 0;color:#fff}.grand .row{font-size:14px;font-weight:700;color:#fff}.saldo{border:2px solid #1a3c34;border-radius:8px;padding:12px 14px;margin:12px 0}.sign{display:flex;justify-content:space-between;margin-top:36px;font-size:10px}.sign-b{text-align:center}.sign-l{margin-top:45px;border-bottom:1px solid #333;width:140px;display:inline-block}.ft{margin-top:20px;padding-top:8px;border-top:1px solid #e8e8e8;font-size:9px;color:#999;text-align:center}@media print{body{padding:16px}@page{margin:10mm;size:A5}}</style></head><body>
-<div class="hdr"><h1>SLIP GAJI KARYAWAN</h1><div class="sub">Departemen Rumah Tangga · Periode: ${s.periode}</div></div>
-<div class="info"><div><b>Nama:</b> ${emp.nama}<br><b>Jabatan:</b> ${emp.jabatan}<br><b>Dept:</b> ${emp.dep}</div><div style="text-align:right"><b>Sisa Kasbon:</b> ${fmtRp(emp.kasbon||0)}<br><b>Saldo Sebelumnya:</b> ${sB>=0?'+':''}${fmtRp(sB)}<br><b>Cetak:</b> ${fmtTgl(now)}</div></div>
-<div class="sec">A. PENDAPATAN</div>
-<div class="row"><span>Gaji Pokok (${s.masukHari}hr × ${fmtRp(s.gajiPerhari)})</span><span class="v">${fmtRp(c.gajiPokok)}</span></div>
-<div class="row"><span>Lembur</span><span class="v">${fmtRp(s.lembur)}</span></div>
-<div class="row"><span>Tunjangan</span><span class="v">${fmtRp(s.tunjangan)}</span></div>
-<div class="row"><span>Bonus</span><span class="v">${fmtRp(s.bonus)}</span></div>
-<div class="tot"><div class="row" style="color:#27ae60"><span>Total Pendapatan</span><span class="v">${fmtRp(c.totalPendapatan)}</span></div></div>
-<div class="sec">B. POTONGAN</div>
-<div class="row"><span>Kasbon</span><span class="v">${fmtRp(s.potKasbon)}</span></div>
-<div class="row sub"><span>Sisa kasbon setelah potong: ${fmtRp(sK)}</span><span></span></div>
-<div class="row"><span>Pot. Makan</span><span class="v">${fmtRp(s.potMakan)}</span></div>
-<div class="tot"><div class="row" style="color:#c0392b"><span>Total Potongan</span><span class="v">${fmtRp(c.totalPotongan)}</span></div></div>
-<div class="sec">C. PEMBAYARAN</div>
-<div class="row"><span>Gaji Bersih</span><span class="v">${fmtRp(c.gajiBersih)}</span></div>
-<div class="row" style="color:${sB>=0?'#27ae60':'#c0392b'}"><span>Saldo Sebelumnya ${sB>0?'(kurang bayar lalu)':sB<0?'(lebih bayar lalu)':''}</span><span class="v">${sB>=0?'+ ':''} ${fmtRp(sB)}</span></div>
-<div class="tot"><div class="row"><span>Yang Harus Dibayar</span><span class="v">${fmtRp(harusBayar)}</span></div></div>
-<div class="grand"><div class="row"><span>JUMLAH DIBAYARKAN</span><span class="v">${fmtRp(dibayar)}</span></div></div>
-<div class="saldo">
-<div style="font-size:11px;font-weight:700;color:#1a3c34;margin-bottom:6px">Saldo → Periode Berikutnya</div>
-<div class="row"><span>Yang Harus Dibayar</span><span class="v">${fmtRp(harusBayar)}</span></div>
-<div class="row"><span>Jumlah Dibayarkan</span><span class="v">${fmtRp(dibayar)}</span></div>
-<div class="row" style="font-weight:700;font-size:13px;color:${saldoBaru>=0?'#27ae60':'#c0392b'};border-top:2px solid #1a3c34;padding-top:6px;margin-top:4px"><span>Saldo Baru</span><span>${saldoBaru>0?'+':''}${fmtRp(saldoBaru)}</span></div>
-<div style="font-size:9px;color:#888;margin-top:4px">${saldoBaru>0?'Karyawan masih kurang dibayar '+fmtRp(saldoBaru)+', dibawa ke periode berikutnya':saldoBaru<0?'Karyawan kelebihan dibayar '+fmtRp(Math.abs(saldoBaru))+', dipotong periode berikutnya':'Lunas, tidak ada saldo terbawa'}</div>
-</div>
-<div class="sign"><div class="sign-b"><div style="color:#666">Penerima,</div><div class="sign-l"></div><div style="font-weight:600;margin-top:3px">${emp.nama}</div></div><div class="sign-b"><div style="color:#666">Bendahara,</div><div class="sign-l"></div><div style="font-weight:600;margin-top:3px">Dept. Rumah Tangga</div></div></div>
-<div class="ft">Saldo (+) kurang bayar → ditambah berikutnya · Saldo (−) lebih bayar → dipotong berikutnya<br>Administrasi Keuangan Dept. Rumah Tangga</div>
+const slip=`<div class="slip">
+<div class="hdr"><div class="logo"><img src="${LOGO_IMG}" style="height:22px"/></div><div><div class="ttl">SLIP GAJI KARYAWAN</div><div class="sub">Dept. Rumah Tangga · ${s.periode}</div></div><div class="tgl">${fmtShort(now)}</div></div>
+<div class="info"><div class="col"><b>${emp.nama}</b> · ${emp.jabatan} · ${emp.dep}</div><div class="col r">Kasbon: ${fmtRp(emp.kasbon||0)} · Saldo: ${sB>=0?'+':''}${fmtRp(sB)}</div></div>
+<div class="body"><div class="sec">
+<div class="stl">PENDAPATAN</div>
+<div class="rw"><span>Gaji Pokok (${s.masukHari}hr × ${fmtRp(s.gajiPerhari)})</span><span>${fmtRp(c.gajiPokok)}</span></div>
+<div class="rw"><span>Lembur</span><span>${fmtRp(s.lembur)}</span></div>
+<div class="rw"><span>Tunjangan</span><span>${fmtRp(s.tunjangan)}</span></div>
+<div class="rw"><span>Bonus</span><span>${fmtRp(s.bonus)}</span></div>
+<div class="rw tot grn"><span>Total Pendapatan</span><span>${fmtRp(c.totalPendapatan)}</span></div>
+</div><div class="sec">
+<div class="stl red">POTONGAN</div>
+<div class="rw"><span>Kasbon</span><span>${fmtRp(s.potKasbon)}</span></div>
+<div class="rw"><span>Pot. Makan</span><span>${fmtRp(s.potMakan)}</span></div>
+<div class="rw tot red"><span>Total Potongan</span><span>${fmtRp(c.totalPotongan)}</span></div>
+</div><div class="sec">
+<div class="stl">PEMBAYARAN</div>
+<div class="rw"><span>Gaji Bersih</span><span>${fmtRp(c.gajiBersih)}</span></div>
+${sB!==0?`<div class="rw ${sB>=0?'grn':'red'}"><span>Saldo Sebelumnya</span><span>${sB>=0?'+':''}${fmtRp(sB)}</span></div>`:''}
+<div class="rw tot"><span>Harus Dibayar</span><span>${fmtRp(harusBayar)}</span></div>
+<div class="rw grand"><span>DIBAYARKAN</span><span>${fmtRp(dibayar)}</span></div>
+<div class="rw saldo ${saldoBaru>=0?'grn':'red'}"><span>Saldo → ${saldoBaru>0?'Kurang bayar':saldoBaru<0?'Lebih bayar':'Lunas'}</span><span>${saldoBaru>0?'+':''}${fmtRp(saldoBaru)}</span></div>
+</div></div>
+<div class="sign"><div class="sb"><div>Penerima,</div><div class="ln"></div><div class="nm">${emp.nama}</div></div><div class="sb"><div>Bendahara,</div><div class="ln"></div><div class="nm">Dept. Rumah Tangga</div></div></div>
+</div>`;
+const html=`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Slip-${emp.nama}</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Plus Jakarta Sans',sans-serif;color:#1a1a1a;font-size:9px;line-height:1.4}
+@page{size:215mm 330mm;margin:6mm 8mm}
+.page{width:100%;display:flex;flex-direction:column;height:318mm}
+.slip{flex:1;padding:6mm 4mm;border-bottom:1.5px dashed #999;position:relative;display:flex;flex-direction:column}
+.slip:last-child{border-bottom:none}
+.slip::after{content:'✂';position:absolute;bottom:-3px;left:4mm;font-size:10px;color:#999}
+.slip:last-child::after{display:none}
+.hdr{display:flex;align-items:center;gap:6px;padding-bottom:4px;border-bottom:2px solid #1a3c34;margin-bottom:4px}
+.hdr .ttl{font-size:11px;font-weight:700;color:#1a3c34}
+.hdr .sub{font-size:8px;color:#888}
+.hdr .tgl{margin-left:auto;font-size:8px;color:#888}
+.info{display:flex;justify-content:space-between;padding:3px 0;font-size:8.5px;border-bottom:1px solid #eee;margin-bottom:3px}
+.info .r{text-align:right}
+.body{display:grid;grid-template-columns:1fr 1fr 1.2fr;gap:4px;flex:1}
+.sec{font-size:8.5px}
+.stl{font-size:8px;font-weight:700;color:#1a3c34;border-bottom:1.5px solid #ddd;padding-bottom:1px;margin-bottom:2px}
+.stl.red{color:#c0392b}
+.rw{display:flex;justify-content:space-between;padding:1.5px 0;font-size:8.5px}
+.rw span:last-child{font-weight:600;white-space:nowrap}
+.rw.tot{border-top:1px solid #ddd;font-weight:700;margin-top:2px;padding-top:2px}
+.rw.grn{color:#1a7a3a}.rw.red{color:#c0392b}
+.rw.grand{background:#1a3c34;color:#fff;border-radius:3px;padding:3px 5px;font-weight:700;font-size:9.5px;margin-top:3px}
+.rw.saldo{background:#f0f0f0;border-radius:3px;padding:2px 5px;font-weight:700;font-size:8.5px;margin-top:2px}
+.sign{display:flex;justify-content:space-between;padding-top:4px;margin-top:auto}
+.sb{text-align:center;font-size:8px;color:#666}
+.ln{margin-top:24px;border-bottom:1px solid #333;width:100px;display:inline-block}
+.nm{font-size:8.5px;font-weight:600;color:#1a1a1a;margin-top:2px}
+@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+</style></head><body>
+<div class="page">${slip}${slip}${slip}</div>
 <script>window.onload=function(){window.print()}<\/script></body></html>`;
 const w=window.open("","_blank");if(w){w.document.write(html);w.document.close();}}
 
@@ -238,7 +278,7 @@ function MainApp({account:acc,onLogout,appData,setAppData,onSave}){
 
     {tab==="proyek"&&(<div>
       <div style={S.card}><div style={S.cardHead}>Tambah Proyek</div><div style={{display:"flex",gap:8,flexWrap:"wrap"}}><input style={S.input} placeholder="Nama" value={pF.name} onChange={e=>setPF({...pF,name:e.target.value})}/><input style={{...S.input,maxWidth:180}} type="number" placeholder="Anggaran" value={pF.anggaran} onChange={e=>setPF({...pF,anggaran:e.target.value})}/>{editP?<><button style={S.btnPri} onClick={()=>{setProjects(projects.map(p=>p.id===editP?{...p,name:pF.name,anggaran:NM(pF.anggaran)}:p));setEditP(null);setPF({name:"",anggaran:""})}}>Simpan</button><button style={S.btnSec} onClick={()=>{setEditP(null);setPF({name:"",anggaran:""})}}>Batal</button></>:<button style={S.btnPri} onClick={()=>{if(!pF.name||!pF.anggaran)return;setProjects([...projects,{id:uid(),name:pF.name,anggaran:NM(pF.anggaran),pencairan:[]}]);setPF({name:"",anggaran:""})}}>{I.plus} Tambah</button>}</div></div>
-      <div style={S.card}><div style={S.cardHead}>Daftar Proyek</div>{!projects.length?<div style={S.empty}>Belum ada</div>:<div style={S.tableWrap}><table style={S.table}><thead><tr><th style={S.th}>No</th><th style={{...S.th,textAlign:"left"}}>Proyek</th><th style={S.th}>Anggaran</th><th style={S.th}>Cair</th><th style={S.th}>Sisa</th><th style={S.th}>Aksi</th></tr></thead><tbody>{projects.map((p,i)=>{const cp=cP(p);return(<tr key={p.id} style={i%2?{background:"#fafbfc"}:{}}><td style={S.td}>{i+1}</td><td style={{...S.td,textAlign:"left"}}><button style={S.linkBtn} onClick={()=>setDetP(p.id)}>{p.name}</button></td><td style={S.td}>{fmtRp(p.anggaran)}</td><td style={{...S.td,color:"#c0392b",fontWeight:600}}>{fmtRp(cp.totalCair)}</td><td style={{...S.td,fontWeight:700,color:cp.sisaAnggaran>=0?"#27ae60":"#c0392b"}}>{fmtRp(cp.sisaAnggaran)}</td><td style={S.td}><div style={{display:"flex",gap:4,justifyContent:"center"}}><button style={S.iconBtn} onClick={()=>setDetP(p.id)}>{I.eye()}</button><button style={S.iconBtn} onClick={()=>{setEditP(p.id);setPF({name:p.name,anggaran:p.anggaran.toString()})}}>{I.edit}</button><button style={{...S.iconBtn,color:"#c0392b"}} onClick={()=>setProjects(projects.filter(x=>x.id!==p.id))}>{I.trash}</button></div></td></tr>)})}</tbody></table></div>}</div>
+      <div style={S.card}><div style={S.cardHead}>Daftar Proyek</div>{!projects.length?<div style={S.empty}>Belum ada</div>:<div style={S.tableWrap}><table style={S.table}><thead><tr><th style={S.th}>No</th><th style={{...S.th,textAlign:"left"}}>Proyek</th><th style={S.th}>Anggaran</th><th style={S.th}>Cair</th><th style={S.th}>Sisa</th><th style={S.th}>Aksi</th></tr></thead><tbody>{projects.map((p,i)=>{const cp=cP(p);return(<tr key={p.id} style={i%2?{background:"#fafbfc"}:{}}><td style={S.td}>{i+1}</td><td style={{...S.td,textAlign:"left"}}><button style={S.linkBtn} onClick={()=>setDetP(p.id)}>{p.name}</button></td><td style={S.td}>{fmtRp(p.anggaran)}</td><td style={{...S.td,color:"#c0392b",fontWeight:600}}>{fmtRp(cp.totalCair)}</td><td style={{...S.td,fontWeight:700,color:cp.sisaAnggaran>=0?"#27ae60":"#c0392b"}}>{fmtRp(cp.sisaAnggaran)}</td><td style={S.td}><div style={{display:"flex",gap:4,justifyContent:"center"}}><button style={{...S.btnMini,borderColor:"#1a3c34",color:"#1a3c34"}} onClick={()=>setDetP(p.id)}>{I.eye()} Detail</button><KebabMenu items={[{icon:I.edit,label:"Edit",onClick:()=>{setEditP(p.id);setPF({name:p.name,anggaran:p.anggaran.toString()})}},{icon:I.trash,label:"Hapus",danger:true,onClick:()=>{if(confirm(`Hapus proyek "${p.name}"?`))setProjects(projects.filter(x=>x.id!==p.id))}}]}/></div></td></tr>)})}</tbody></table></div>}</div>
     </div>)}
 
     {tab==="karyawan"&&(<div>
@@ -246,7 +286,7 @@ function MainApp({account:acc,onLogout,appData,setAppData,onSave}){
       <div style={{...S.card,paddingTop:10,paddingBottom:10,marginBottom:10}}><div style={{display:"flex",alignItems:"center",gap:8}}><span style={{color:"#888"}}>{I.search}</span><input style={{...S.input,border:"none",background:"transparent",paddingLeft:0,fontSize:13}} placeholder="Cari nama, jabatan, departemen..." value={empQ} onChange={e=>setEmpQ(e.target.value)}/>{empQ&&<button style={{...S.iconBtn,color:"#999"}} onClick={()=>setEmpQ("")}>{I.x}</button>}</div></div>
       {!showEF&&<button style={{...S.btnPri,marginBottom:10}} onClick={()=>{setShowEF(true);setEditE(null);setEF({nama:"",jabatan:"",dep:"",gaji:"",telp:"",status:"Aktif"})}}>{I.plus} Tambah</button>}
       {showEF&&<div style={S.card}><div style={S.cardHead}>{editE?"Edit":"Tambah"} Karyawan</div><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))",gap:8}}>{[["Nama","nama"],["Jabatan","jabatan"],["Dept","dep"],["Gaji","gaji"],["Telp","telp"]].map(([l,k])=>(<div key={k}><label style={S.lbl}>{l}</label><input style={S.input} type={k==="gaji"?"number":"text"} value={eF[k]} onChange={e=>setEF({...eF,[k]:e.target.value})}/></div>))}<div><label style={S.lbl}>Status</label><select style={S.select} value={eF.status} onChange={e=>setEF({...eF,status:e.target.value})}><option>Aktif</option><option>Nonaktif</option><option>Cuti</option></select></div></div><div style={{display:"flex",gap:6,marginTop:12}}>{editE?<button style={S.btnPri} onClick={()=>{setEmployees(employees.map(e=>e.id===editE?{...e,...eF,gaji:NM(eF.gaji)}:e));setEditE(null);setShowEF(false)}}>Simpan</button>:<button style={S.btnPri} onClick={()=>{if(!eF.nama||!eF.gaji)return;setEmployees([...employees,{id:uid(),...eF,gaji:NM(eF.gaji),slip:mkSlip(),saldo:0,kasbon:0,logKasbon:[],riwayat:[]}]);setEF({nama:"",jabatan:"",dep:"",gaji:"",telp:"",status:"Aktif"});setShowEF(false)}}>{I.plus} Simpan</button>}<button style={S.btnSec} onClick={()=>{setShowEF(false);setEditE(null)}}>Batal</button></div></div>}
-      <div style={S.card}><div style={S.cardHead}>Daftar Karyawan {empQ&&<span style={{fontWeight:400,color:"#aaa",fontSize:11}}>· {fEmp.length} hasil</span>}</div>{!fEmp.length?<div style={S.empty}>{empQ?"Tidak ditemukan":"Belum ada"}</div>:<div style={S.tableWrap}><table style={S.table}><thead><tr><th style={S.th}>No</th><th style={{...S.th,textAlign:"left"}}>Nama</th><th style={{...S.th,textAlign:"left"}}>Jabatan</th><th style={S.th}>Total Diterima</th><th style={S.th}>Kasbon</th><th style={S.th}>Saldo</th><th style={S.th}>Aksi</th></tr></thead><tbody>{fEmp.map((e,i)=>{const cs=calcSlip(e.slip||mkSlip());const td=cs.gajiBersih+(e.saldo||0);return(<tr key={e.id} style={i%2?{background:"#fafbfc"}:{}}><td style={S.td}>{i+1}</td><td style={{...S.td,textAlign:"left"}}><div style={{fontWeight:500}}>{e.nama}</div><div style={{fontSize:10,color:"#999"}}>{e.telp}</div></td><td style={{...S.td,textAlign:"left",fontSize:11}}>{e.jabatan}<br/><span style={{...S.badge,background:"#eef2ff",color:"#4338ca"}}>{e.dep}</span></td><td style={{...S.td,fontWeight:700,color:"#1a3c34"}}>{fmtRp(td)}</td><td style={{...S.td,fontWeight:600,color:e.kasbon?"#e67e22":"#aaa"}}>{fmtRp(e.kasbon||0)}</td><td style={{...S.td,fontWeight:700,color:(e.saldo||0)>=0?"#27ae60":"#c0392b"}}>{(e.saldo||0)>=0?"+":""}{fmtRp(e.saldo||0)}</td><td style={S.td}><div style={{display:"flex",gap:4,justifyContent:"center",flexWrap:"wrap"}}><button style={{...S.btnMini,borderColor:"#1a3c34",color:"#1a3c34"}} onClick={()=>setSlipE(e.id)}>{I.slip} Slip</button><button style={S.iconBtn} onClick={()=>{setEditE(e.id);setEF({nama:e.nama,jabatan:e.jabatan,dep:e.dep,gaji:e.gaji.toString(),telp:e.telp||"",status:e.status});setShowEF(true)}}>{I.edit}</button><button style={{...S.iconBtn,color:"#c0392b"}} onClick={()=>setEmployees(employees.filter(x=>x.id!==e.id))}>{I.trash}</button></div></td></tr>)})}</tbody></table></div>}</div>
+      <div style={S.card}><div style={S.cardHead}>Daftar Karyawan {empQ&&<span style={{fontWeight:400,color:"#aaa",fontSize:11}}>· {fEmp.length} hasil</span>}</div>{!fEmp.length?<div style={S.empty}>{empQ?"Tidak ditemukan":"Belum ada"}</div>:<div style={S.tableWrap}><table style={S.table}><thead><tr><th style={S.th}>No</th><th style={{...S.th,textAlign:"left"}}>Nama</th><th style={{...S.th,textAlign:"left"}}>Jabatan</th><th style={S.th}>Total Diterima</th><th style={S.th}>Kasbon</th><th style={S.th}>Saldo</th><th style={S.th}>Aksi</th></tr></thead><tbody>{fEmp.map((e,i)=>{const cs=calcSlip(e.slip||mkSlip());const td=cs.gajiBersih+(e.saldo||0);return(<tr key={e.id} style={i%2?{background:"#fafbfc"}:{}}><td style={S.td}>{i+1}</td><td style={{...S.td,textAlign:"left"}}><div style={{fontWeight:500}}>{e.nama}</div><div style={{fontSize:10,color:"#999"}}>{e.telp}</div></td><td style={{...S.td,textAlign:"left",fontSize:11}}>{e.jabatan}<br/><span style={{...S.badge,background:"#eef2ff",color:"#4338ca"}}>{e.dep}</span></td><td style={{...S.td,fontWeight:700,color:"#1a3c34"}}>{fmtRp(td)}</td><td style={{...S.td,fontWeight:600,color:e.kasbon?"#e67e22":"#aaa"}}>{fmtRp(e.kasbon||0)}</td><td style={{...S.td,fontWeight:700,color:(e.saldo||0)>=0?"#27ae60":"#c0392b"}}>{(e.saldo||0)>=0?"+":""}{fmtRp(e.saldo||0)}</td><td style={S.td}><div style={{display:"flex",gap:4,justifyContent:"center",flexWrap:"wrap"}}><button style={{...S.btnMini,borderColor:"#1a3c34",color:"#1a3c34"}} onClick={()=>setSlipE(e.id)}>{I.slip} Slip</button><KebabMenu items={[{icon:I.edit,label:"Edit",onClick:()=>{setEditE(e.id);setEF({nama:e.nama,jabatan:e.jabatan,dep:e.dep,gaji:e.gaji.toString(),telp:e.telp||"",status:e.status});setShowEF(true)}},{icon:I.trash,label:"Hapus",danger:true,onClick:()=>{if(confirm(`Hapus karyawan "${e.nama}"?`))setEmployees(employees.filter(x=>x.id!==e.id))}}]}/></div></td></tr>)})}</tbody></table></div>}</div>
     </div>)}
 
     {tab==="pinjaman"&&(<div>
@@ -294,10 +334,8 @@ function MainApp({account:acc,onLogout,appData,setAppData,onSave}){
             <td style={S.td}>{a.username}</td>
             <td style={S.td}><div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:4}}><span style={{fontFamily:"monospace",fontSize:11}}>{showPass[a.username]?a.password:"••••••"}</span><button style={{...S.iconBtn,color:"#888"}} onClick={()=>setShowPass({...showPass,[a.username]:!showPass[a.username]})}>{showPass[a.username]?I.eyeOff("#888"):I.eye("#888")}</button></div></td>
             <td style={S.td}><span style={{...S.badge,background:a.role==="Admin"?"#e3f2fd":"#e8f5e9",color:a.role==="Admin"?"#2980b9":"#27ae60"}}>{a.role}</span></td>
-            <td style={S.td}><div style={{display:"flex",gap:4,justifyContent:"center"}}>
-              <button style={S.iconBtn} onClick={()=>{setEditAkun(a.username);setAkunF({username:a.username,password:a.password,nama:a.nama,role:a.role})}}>{I.edit}</button>
-              {a.username!==acc.username&&<button style={{...S.iconBtn,color:"#c0392b"}} onClick={()=>{if(confirm(`Hapus akun "${a.nama}"?`))setAccounts(accounts.filter(x=>x.username!==a.username))}}>{I.trash}</button>}
-            </div></td>
+            <td style={S.td}><KebabMenu items={[{icon:I.edit,label:"Edit",onClick:()=>{setEditAkun(a.username);setAkunF({username:a.username,password:a.password,nama:a.nama,role:a.role})}},...(a.username!==acc.username?[{icon:I.trash,label:"Hapus",danger:true,onClick:()=>{if(confirm(`Hapus akun "${a.nama}"?`))setAccounts(accounts.filter(x=>x.username!==a.username))}}]:[])
+            ]}/></td>
           </tr>))}
         </tbody></table></div>
       </div>
@@ -313,7 +351,7 @@ return(<div>
   <div style={{...S.card,paddingTop:10,paddingBottom:10}}><div style={{display:"flex",justifyContent:"space-between",marginBottom:4,fontSize:11}}><span style={{color:"#888"}}>{fmtRp(c.totalCair)}/{fmtRp(p.anggaran)}</span><span style={{fontWeight:600}}>{pct.toFixed(1)}%</span></div><div style={S.progressOuter}><div style={{...S.progressInner,width:`${Math.min(pct,100)}%`,background:"#3b6b5e"}}/></div></div>
   <div style={S.card}><div style={S.cardHead}>Tambah Tahap</div><div style={{display:"flex",gap:8,flexWrap:"wrap"}}><input style={{...S.input,maxWidth:160}} type="number" placeholder="Jumlah" value={pcF.jumlah} onChange={e=>{setPcF({...pcF,jumlah:e.target.value});setErr("")}}/><input style={S.input} placeholder="Keterangan" value={pcF.ket} onChange={e=>setPcF({...pcF,ket:e.target.value})}/><button style={S.btnPri} onClick={()=>{if(!pcF.jumlah)return;const j=NM(pcF.jumlah);if(c.totalRencana+j>p.anggaran){setErr(`Melebihi! Sisa: ${fmtRp(c.sisaAlokasi)}`);return}setErr("");const nxt=p.pencairan.length?Math.max(...p.pencairan.map(x=>x.tahap))+1:1;onU({...p,pencairan:[...p.pencairan,{id:uid(),tahap:nxt,jumlah:j,tgl:"",status:"Belum Cair",ket:pcF.ket}]});setPcF({jumlah:"",ket:""})}}>{I.plus} Tambah</button></div>{err&&<div style={{fontSize:11,color:"#c0392b",background:"#fef2f2",padding:"6px 10px",borderRadius:6,marginTop:6}}>{err}</div>}</div>
   <div style={S.card}><div style={S.cardHead}>Detail Pencairan</div>{!p.pencairan.length?<div style={S.empty}>Belum ada</div>:<div style={S.tableWrap}><table style={S.table}><thead><tr><th style={{...S.th,width:40,textAlign:"center"}}>Thp</th><th style={{...S.th,textAlign:"left"}}>Ket</th><th style={{...S.th,textAlign:"right",width:105}}>Jumlah</th><th style={{...S.th,textAlign:"right",width:105}}>Potong</th><th style={{...S.th,textAlign:"right",width:105}}>Sisa</th><th style={{...S.th,textAlign:"center",width:85}}>Status</th><th style={{...S.th,width:100}}>Aksi</th></tr></thead><tbody>
-  {(()=>{run=p.anggaran;return p.pencairan.map((pc,i)=>{const ic=pc.status!=="Belum Cair";if(ic)run-=pc.jumlah;const sc=stC(pc.status);const nl=nxLb(pc.status);return(<tr key={pc.id} style={i%2?{background:"#fafbfc"}:{}}><td style={{...S.td,textAlign:"center",fontWeight:700}}>{pc.tahap}</td><td style={{...S.td,textAlign:"left",fontSize:11}}>{pc.ket||"-"}{pc.tgl&&<div style={{fontSize:9,color:"#aaa"}}>{pc.tgl}</div>}</td><td style={{...S.td,textAlign:"right"}}>{fmtRp(pc.jumlah)}</td><td style={{...S.td,textAlign:"right",fontWeight:600,color:ic?"#c0392b":"#ccc"}}>{ic?`- ${fmtRp(pc.jumlah)}`:"-"}</td><td style={{...S.td,textAlign:"right",fontWeight:600}}>{ic?fmtRp(run):"-"}</td><td style={{...S.td,textAlign:"center"}}><span style={{...S.badge,background:sc.bg,color:sc.fg}}>{pc.status}</span></td><td style={{...S.td,textAlign:"center"}}><div style={{display:"flex",gap:3,justifyContent:"center"}}>{nl&&<button style={{...S.btnMini,borderColor:sc.fg,color:sc.fg}} onClick={()=>{const ns=nxSt(pc.status);onU({...p,pencairan:p.pencairan.map(x=>x.id===pc.id?{...x,status:ns,tgl:ns==="Sudah Cair"?fmtShort(new Date()):x.tgl}:x)})}}>{nl}</button>}<button style={{...S.iconBtn,color:"#c0392b"}} onClick={()=>onU({...p,pencairan:p.pencairan.filter(x=>x.id!==pc.id).map((x,j)=>({...x,tahap:j+1}))})}>{I.trash}</button></div></td></tr>)})})()}
+  {(()=>{run=p.anggaran;return p.pencairan.map((pc,i)=>{const ic=pc.status!=="Belum Cair";if(ic)run-=pc.jumlah;const sc=stC(pc.status);const nl=nxLb(pc.status);return(<tr key={pc.id} style={i%2?{background:"#fafbfc"}:{}}><td style={{...S.td,textAlign:"center",fontWeight:700}}>{pc.tahap}</td><td style={{...S.td,textAlign:"left",fontSize:11}}>{pc.ket||"-"}{pc.tgl&&<div style={{fontSize:9,color:"#aaa"}}>{pc.tgl}</div>}</td><td style={{...S.td,textAlign:"right"}}>{fmtRp(pc.jumlah)}</td><td style={{...S.td,textAlign:"right",fontWeight:600,color:ic?"#c0392b":"#ccc"}}>{ic?`- ${fmtRp(pc.jumlah)}`:"-"}</td><td style={{...S.td,textAlign:"right",fontWeight:600}}>{ic?fmtRp(run):"-"}</td><td style={{...S.td,textAlign:"center"}}><span style={{...S.badge,background:sc.bg,color:sc.fg}}>{pc.status}</span></td><td style={{...S.td,textAlign:"center"}}><div style={{display:"flex",gap:3,justifyContent:"center"}}>{nl&&<button style={{...S.btnMini,borderColor:sc.fg,color:sc.fg}} onClick={()=>{const ns=nxSt(pc.status);onU({...p,pencairan:p.pencairan.map(x=>x.id===pc.id?{...x,status:ns,tgl:ns==="Sudah Cair"?fmtShort(new Date()):x.tgl}:x)})}}>{nl}</button>}<KebabMenu items={[{icon:I.trash,label:"Hapus Tahap",danger:true,onClick:()=>{if(confirm(`Hapus tahap ${pc.tahap}?`))onU({...p,pencairan:p.pencairan.filter(x=>x.id!==pc.id).map((x,j)=>({...x,tahap:j+1}))})}}]}/></div></td></tr>)})})()}
   <tr style={{background:"#f4f7f6"}}><td colSpan="2" style={{...S.td,textAlign:"right",fontWeight:700}}>Total</td><td style={{...S.td,textAlign:"right",fontWeight:700}}>{fmtRp(c.totalRencana)}</td><td style={{...S.td,textAlign:"right",fontWeight:700,color:"#c0392b"}}>- {fmtRp(c.totalCair)}</td><td style={{...S.td,textAlign:"right",fontWeight:700,color:c.sisaAnggaran>=0?"#27ae60":"#c0392b"}}>{fmtRp(c.sisaAnggaran)}</td><td colSpan="2" style={S.td}/></tr></tbody></table></div>}</div>
 </div>);}
 
