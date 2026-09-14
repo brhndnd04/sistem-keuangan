@@ -51,6 +51,7 @@ const defaultData=()=>({
   ],
   loans:[],
   transactions:[],
+  pengajuan:[],
   accounts:[...ACCTS],
 });
 
@@ -221,7 +222,9 @@ function MainApp({account:acc,onLogout,appData,setAppData,onSave}){
   const[eF,setEF]=useState({nama:"",jabatan:"",dep:"",gaji:"",telp:"",status:"Aktif"});const[editE,setEditE]=useState(null);const[showEF,setShowEF]=useState(false);
   const[lF,setLF]=useState({dari:"",ke:"",jumlah:"",ket:""});const[tF,setTF]=useState({tipe:"masuk",jumlah:"",ket:"",proyek:""});
   const[empQ,setEmpQ]=useState("");
-  const[pnProj,setPnProj]=useState("");const[pnF,setPnF]=useState({tipe:"debit",jumlah:"",ket:""});const[editPnId,setEditPnId]=useState(null);const[editPnSaldo,setEditPnSaldo]=useState("");
+  const[pengajuan,setPengajuan]=useState(appData.pengajuan||[]);
+  const[pgSel,setPgSel]=useState(null);const[pgNF,setPgNF]=useState("");const[editPgId,setEditPgId]=useState(null);
+  const[pgF,setPgF]=useState({tipe:"debit",jumlah:"",ket:""});const[editEntId,setEditEntId]=useState(null);const[editEntSaldo,setEditEntSaldo]=useState("");
   const[saving,setSaving]=useState(false);
   const saveTimer=useRef(null);
 
@@ -229,16 +232,16 @@ function MainApp({account:acc,onLogout,appData,setAppData,onSave}){
 
   // Auto-save to Supabase when data changes
   const doSave=useCallback(()=>{
-    const data={projects,employees,loans,transactions:tx,accounts:appData.accounts||ACCTS};
+    const data={projects,employees,loans,transactions:tx,pengajuan,accounts:appData.accounts||ACCTS};
     setSaving(true);
     onSave(data).finally(()=>setTimeout(()=>setSaving(false),1000));
-  },[projects,employees,loans,tx,appData.accounts,onSave]);
+  },[projects,employees,loans,tx,pengajuan,appData.accounts,onSave]);
 
   useEffect(()=>{
     if(saveTimer.current)clearTimeout(saveTimer.current);
     saveTimer.current=setTimeout(doSave,2000);
     return()=>{if(saveTimer.current)clearTimeout(saveTimer.current)};
-  },[projects,employees,loans,tx]);
+  },[projects,employees,loans,tx,pengajuan]);
 
   const tAng=useMemo(()=>projects.reduce((s,p)=>s+p.anggaran,0),[projects]);
   const tCair=useMemo(()=>projects.reduce((s,p)=>s+cP(p).totalCair,0),[projects]);
@@ -252,7 +255,7 @@ function MainApp({account:acc,onLogout,appData,setAppData,onSave}){
   const pcC=(s)=>allPc.filter(x=>x.status===s).length;const pcS=(s)=>allPc.filter(x=>x.status===s).reduce((a,x)=>a+x.jumlah,0);
   const fEmp=useMemo(()=>{if(!empQ)return employees;const q=empQ.toLowerCase();return employees.filter(e=>e.nama.toLowerCase().includes(q)||e.jabatan.toLowerCase().includes(q)||e.dep.toLowerCase().includes(q))},[employees,empQ]);
 
-  const navs=[{id:"dashboard",icon:I.home,lb:"Dashboard"},{id:"proyek",icon:I.folder,lb:"Proyek"},{id:"karyawan",icon:I.users,lb:"Karyawan"},{id:"penitipan",icon:I.wallet,lb:"Penitipan Uang"},{id:"pinjaman",icon:I.shuffle,lb:"Pinjaman"},{id:"transaksi",icon:I.list,lb:"Transaksi"},...(acc.role==="Admin"?[{id:"akun",icon:I.key,lb:"Kelola Akun"}]:[])];
+  const navs=[{id:"dashboard",icon:I.home,lb:"Dashboard"},{id:"proyek",icon:I.folder,lb:"Proyek"},{id:"karyawan",icon:I.users,lb:"Karyawan"},{id:"pengajuan",icon:I.wallet,lb:"Proyek Pengajuan"},{id:"pinjaman",icon:I.shuffle,lb:"Pinjaman"},{id:"transaksi",icon:I.list,lb:"Transaksi"},...(acc.role==="Admin"?[{id:"akun",icon:I.key,lb:"Kelola Akun"}]:[])];
   const[akunF,setAkunF]=useState({username:"",password:"",nama:"",role:"Bendahara"});const[editAkun,setEditAkun]=useState(null);const[showPass,setShowPass]=useState({});
   const accounts=appData.accounts||ACCTS;
   const setAccounts=(newAccs)=>{const newData={...appData,accounts:newAccs};setAppData(prev=>({...prev,accounts:newAccs}));onSave({projects,employees,loans,transactions:tx,accounts:newAccs});};
@@ -290,45 +293,87 @@ function MainApp({account:acc,onLogout,appData,setAppData,onSave}){
       <div style={S.card}><div style={S.cardHead}>Daftar Karyawan {empQ&&<span style={{fontWeight:400,color:"#aaa",fontSize:11}}>· {fEmp.length} hasil</span>}</div>{!fEmp.length?<div style={S.empty}>{empQ?"Tidak ditemukan":"Belum ada"}</div>:<div style={S.tableWrap}><table style={S.table}><thead><tr><th style={S.th}>No</th><th style={{...S.th,textAlign:"left"}}>Nama</th><th style={{...S.th,textAlign:"left"}}>Jabatan</th><th style={S.th}>Total Diterima</th><th style={S.th}>Kasbon</th><th style={S.th}>Saldo</th><th style={S.th}>Aksi</th></tr></thead><tbody>{fEmp.map((e,i)=>{const cs=calcSlip(e.slip||mkSlip());const td=cs.gajiBersih+(e.saldo||0);return(<tr key={e.id} style={i%2?{background:"#fafbfc"}:{}}><td style={S.td}>{i+1}</td><td style={{...S.td,textAlign:"left"}}><div style={{fontWeight:500}}>{e.nama}</div><div style={{fontSize:10,color:"#999"}}>{e.telp}</div></td><td style={{...S.td,textAlign:"left",fontSize:11}}>{e.jabatan}<br/><span style={{...S.badge,background:"#eef2ff",color:"#4338ca"}}>{e.dep}</span></td><td style={{...S.td,fontWeight:700,color:"#1a3c34"}}>{fmtRp(td)}</td><td style={{...S.td,fontWeight:600,color:e.kasbon?"#e67e22":"#aaa"}}>{fmtRp(e.kasbon||0)}</td><td style={{...S.td,fontWeight:700,color:(e.saldo||0)>=0?"#27ae60":"#c0392b"}}>{(e.saldo||0)>=0?"+":""}{fmtRp(e.saldo||0)}</td><td style={S.td}><div style={{display:"flex",gap:4,justifyContent:"center",flexWrap:"wrap"}}><button style={{...S.btnMini,borderColor:"#1a3c34",color:"#1a3c34"}} onClick={()=>setSlipE(e.id)}>{I.slip} Slip</button><KebabMenu items={[{icon:I.edit,label:"Edit",onClick:()=>{setEditE(e.id);setEF({nama:e.nama,jabatan:e.jabatan,dep:e.dep,gaji:e.gaji.toString(),telp:e.telp||"",status:e.status});setShowEF(true)}},{icon:I.trash,label:"Hapus",danger:true,onClick:()=>{if(confirm(`Hapus karyawan "${e.nama}"?`))setEmployees(employees.filter(x=>x.id!==e.id))}}]}/></div></td></tr>)})}</tbody></table></div>}</div>
     </div>)}
 
-    {tab==="penitipan"&&(()=>{
-      const selP=projects.find(x=>x.id===pnProj);
-      const pn=selP?(selP.penitipan||[]):[];
-      const tDebit=pn.reduce((s,x)=>s+(x.debit||0),0);
-      const tKredit=pn.reduce((s,x)=>s+(x.kredit||0),0);
-      let runS=0;
-      const rows=pn.map(x=>{if(x.saldoManual!==null&&x.saldoManual!==undefined)runS=x.saldoManual;else runS=runS+(x.debit||0)-(x.kredit||0);return{...x,saldoCalc:runS}});
-      const saldo=rows.length?rows[rows.length-1].saldoCalc:0;
-      const updPn=(newPn)=>{setProjects(projects.map(x=>x.id===pnProj?{...x,penitipan:newPn}:x))};
-      const addPn=()=>{if(!pnF.jumlah||!pnF.ket||!pnProj)return;const j=NM(pnF.jumlah);updPn([...pn,{id:uid(),tgl:fmtShort(new Date()),ket:pnF.ket,debit:pnF.tipe==="debit"?j:0,kredit:pnF.tipe==="kredit"?j:0,saldoManual:null}]);setPnF({tipe:"debit",jumlah:"",ket:""})};
-      const delPn=(id)=>{if(confirm("Hapus transaksi ini?"))updPn(pn.filter(x=>x.id!==id))};
-      const saveSM=(id)=>{updPn(pn.map(x=>x.id===id?{...x,saldoManual:NM(editPnSaldo)}:x));setEditPnId(null);setEditPnSaldo("")};
-      const resetSM=(id)=>{updPn(pn.map(x=>x.id===id?{...x,saldoManual:null}:x))};
+    {tab==="pengajuan"&&(()=>{
+      // Helper: calc saldo for a project
+      const calcPg=(ent)=>{let rs=0;return ent.map(x=>{if(x.saldoManual!==null&&x.saldoManual!==undefined)rs=x.saldoManual;else rs=rs+(x.debit||0)-(x.kredit||0);return{...x,saldoCalc:rs}})};
+      const pgSaldo=(ent)=>{const r=calcPg(ent);return r.length?r[r.length-1].saldoCalc:0};
+      // Global totals
+      const gDebit=pengajuan.reduce((s,pg)=>(pg.entries||[]).reduce((a,x)=>a+(x.debit||0),0)+s,0);
+      const gKredit=pengajuan.reduce((s,pg)=>(pg.entries||[]).reduce((a,x)=>a+(x.kredit||0),0)+s,0);
+      const gSaldo=pengajuan.reduce((s,pg)=>s+pgSaldo(pg.entries||[]),0);
+      // Selected project
+      const selPg=pengajuan.find(x=>x.id===pgSel);
+      const ent=selPg?(selPg.entries||[]):[];
+      const rows=selPg?calcPg(ent):[];
+      const tD=ent.reduce((s,x)=>s+(x.debit||0),0);
+      const tK=ent.reduce((s,x)=>s+(x.kredit||0),0);
+      const curSaldo=rows.length?rows[rows.length-1].saldoCalc:0;
+      // CRUD
+      const updEnt=(newEnt)=>setPengajuan(pengajuan.map(x=>x.id===pgSel?{...x,entries:newEnt}:x));
+      const addEnt=()=>{if(!pgF.jumlah||!pgF.ket||!pgSel)return;const j=NM(pgF.jumlah);updEnt([...ent,{id:uid(),tgl:fmtShort(new Date()),ket:pgF.ket,debit:pgF.tipe==="debit"?j:0,kredit:pgF.tipe==="kredit"?j:0,saldoManual:null}]);setPgF({tipe:"debit",jumlah:"",ket:""})};
+      const delEnt=(id)=>{if(confirm("Hapus transaksi ini?"))updEnt(ent.filter(x=>x.id!==id))};
+      const saveSM=(id)=>{updEnt(ent.map(x=>x.id===id?{...x,saldoManual:NM(editEntSaldo)}:x));setEditEntId(null);setEditEntSaldo("")};
+      const resetSM=(id)=>{updEnt(ent.map(x=>x.id===id?{...x,saldoManual:null}:x))};
 
       return(<div>
-        <div style={S.card}><div style={S.cardHead}>Pilih Proyek</div>
-          <select style={{...S.select,fontSize:14,padding:"10px 12px",fontWeight:600}} value={pnProj} onChange={e=>setPnProj(e.target.value)}>
-            <option value="">— Pilih Proyek —</option>
-            {projects.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
-          </select>
+        {/* Global Summary */}
+        <div style={S.grid3}>
+          <div style={{...S.statCard,borderTop:"3px solid #2980b9"}}><div style={S.statLbl}>Total Debit (Semua)</div><div style={{...S.statVal,color:"#2980b9"}}>{fmtRp(gDebit)}</div></div>
+          <div style={{...S.statCard,borderTop:"3px solid #c0392b"}}><div style={S.statLbl}>Total Kredit (Semua)</div><div style={{...S.statVal,color:"#c0392b"}}>{fmtRp(gKredit)}</div></div>
+          <div style={{...S.statCard,borderTop:`3px solid ${gSaldo>=0?"#27ae60":"#c0392b"}`}}><div style={S.statLbl}>Saldo Global</div><div style={{...S.statVal,color:gSaldo>=0?"#27ae60":"#c0392b"}}>{fmtRp(gSaldo)}</div></div>
         </div>
 
-        {!pnProj?<div style={{...S.card,textAlign:"center",padding:40}}><div style={{color:"#bbb",fontSize:13}}>Pilih proyek di atas untuk melihat penitipan uang</div></div>:(<>
-          <div style={S.grid3}>
-            <div style={{...S.statCard,borderTop:"3px solid #2980b9"}}><div style={S.statLbl}>Total Debit (Masuk)</div><div style={{...S.statVal,color:"#2980b9"}}>{fmtRp(tDebit)}</div></div>
-            <div style={{...S.statCard,borderTop:"3px solid #c0392b"}}><div style={S.statLbl}>Total Kredit (Keluar)</div><div style={{...S.statVal,color:"#c0392b"}}>{fmtRp(tKredit)}</div></div>
-            <div style={{...S.statCard,borderTop:`3px solid ${saldo>=0?"#27ae60":"#c0392b"}`}}><div style={S.statLbl}>Saldo</div><div style={{...S.statVal,color:saldo>=0?"#27ae60":"#c0392b"}}>{fmtRp(saldo)}</div></div>
+        {/* Add Project */}
+        <div style={S.card}><div style={S.cardHead}>Tambah Proyek Pengajuan</div>
+          <div style={{display:"flex",gap:8}}>
+            <input style={{...S.input,flex:1}} value={pgNF} onChange={e=>setPgNF(e.target.value)} placeholder="Nama proyek pengajuan baru" onKeyDown={e=>{if(e.key==="Enter"&&pgNF.trim()){setPengajuan([...pengajuan,{id:uid(),name:pgNF.trim(),entries:[]}]);setPgNF("")}}}/>
+            {editPgId?<><button style={S.btnPri} onClick={()=>{if(!pgNF.trim())return;setPengajuan(pengajuan.map(x=>x.id===editPgId?{...x,name:pgNF.trim()}:x));setEditPgId(null);setPgNF("")}}>Simpan</button><button style={S.btnSec} onClick={()=>{setEditPgId(null);setPgNF("")}}>Batal</button></>
+            :<button style={S.btnPri} onClick={()=>{if(!pgNF.trim())return;setPengajuan([...pengajuan,{id:uid(),name:pgNF.trim(),entries:[]}]);setPgNF("")}}>{I.plus} Tambah</button>}
           </div>
+        </div>
 
-          <div style={S.card}><div style={S.cardHead}>Catat Penitipan — {selP.name}</div>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:8}}>
-              <div><label style={S.lbl}>Tipe</label><select style={S.select} value={pnF.tipe} onChange={e=>setPnF({...pnF,tipe:e.target.value})}><option value="debit">Debit (Masuk)</option><option value="kredit">Kredit (Keluar)</option></select></div>
-              <div><label style={S.lbl}>Jumlah</label><input style={S.input} type="number" value={pnF.jumlah} onChange={e=>setPnF({...pnF,jumlah:e.target.value})} placeholder="Nominal"/></div>
-              <div><label style={S.lbl}>Keterangan</label><input style={S.input} value={pnF.ket} onChange={e=>setPnF({...pnF,ket:e.target.value})} placeholder="Keterangan transaksi"/></div>
+        {/* Project List */}
+        <div style={S.card}><div style={S.cardHead}>Daftar Proyek Pengajuan ({pengajuan.length})</div>
+          {!pengajuan.length?<div style={S.empty}>Belum ada proyek pengajuan</div>:
+          <div style={{display:"flex",flexDirection:"column",gap:6}}>
+            {pengajuan.map(pg=>{const ps=pgSaldo(pg.entries||[]);const pD=(pg.entries||[]).reduce((s,x)=>s+(x.debit||0),0);const pK=(pg.entries||[]).reduce((s,x)=>s+(x.kredit||0),0);return(
+              <div key={pg.id} onClick={()=>setPgSel(pg.id)} style={{background:pgSel===pg.id?"#f0faf7":"#fafbfc",border:pgSel===pg.id?"2px solid #1a3c34":"2px solid transparent",borderRadius:10,padding:"12px 16px",cursor:"pointer",transition:"all 0.15s"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <div><div style={{fontWeight:600,fontSize:13,color:"#1a3c34"}}>{pg.name}</div><div style={{fontSize:10,color:"#999",marginTop:2}}>{(pg.entries||[]).length} transaksi</div></div>
+                  <div style={{display:"flex",alignItems:"center",gap:10}}>
+                    <div style={{textAlign:"right"}}><div style={{fontSize:10,color:"#aaa"}}>Saldo</div><div style={{fontWeight:700,fontSize:15,color:ps>=0?"#27ae60":"#c0392b"}}>{fmtRp(ps)}</div></div>
+                    <KebabMenu items={[{icon:I.edit,label:"Rename",onClick:()=>{setEditPgId(pg.id);setPgNF(pg.name)}},{icon:I.trash,label:"Hapus Proyek",danger:true,onClick:()=>{if(confirm(`Hapus "${pg.name}" beserta semua transaksinya?`)){setPengajuan(pengajuan.filter(x=>x.id!==pg.id));if(pgSel===pg.id)setPgSel(null)}}}]}/>
+                  </div>
+                </div>
+                <div style={{display:"flex",gap:16,marginTop:6,fontSize:11}}>
+                  <span style={{color:"#2980b9"}}>Debit: {fmtRp(pD)}</span>
+                  <span style={{color:"#c0392b"}}>Kredit: {fmtRp(pK)}</span>
+                </div>
+              </div>
+            )})}
+          </div>}
+        </div>
+
+        {/* Selected Project Detail */}
+        {selPg&&(<>
+          <div style={{...S.card,border:"2px solid #7c3aed"}}><div style={{fontSize:14,fontWeight:700,color:"#7c3aed",marginBottom:12,paddingBottom:7,borderBottom:"2px solid #ede7f6"}}>{selPg.name}</div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>
+              <div style={{background:"#eef6ff",borderRadius:8,padding:"10px 12px",textAlign:"center"}}><div style={{fontSize:9,fontWeight:700,color:"#2980b9"}}>Debit</div><div style={{fontSize:16,fontWeight:700,color:"#2980b9"}}>{fmtRp(tD)}</div></div>
+              <div style={{background:"#fef2f2",borderRadius:8,padding:"10px 12px",textAlign:"center"}}><div style={{fontSize:9,fontWeight:700,color:"#c0392b"}}>Kredit</div><div style={{fontSize:16,fontWeight:700,color:"#c0392b"}}>{fmtRp(tK)}</div></div>
+              <div style={{background:curSaldo>=0?"#e8f5e9":"#fce4ec",borderRadius:8,padding:"10px 12px",textAlign:"center"}}><div style={{fontSize:9,fontWeight:700,color:curSaldo>=0?"#27ae60":"#c0392b"}}>Saldo</div><div style={{fontSize:16,fontWeight:700,color:curSaldo>=0?"#27ae60":"#c0392b"}}>{fmtRp(curSaldo)}</div></div>
             </div>
-            <button style={{...S.btnPri,marginTop:12}} onClick={addPn}>{pnF.tipe==="debit"?I.down:I.up} Catat {pnF.tipe==="debit"?"Debit":"Kredit"}</button>
           </div>
 
-          <div style={S.card}><div style={S.cardHead}>Riwayat Penitipan ({pn.length} transaksi)</div>
+          <div style={S.card}><div style={S.cardHead}>Catat Transaksi</div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:8}}>
+              <div><label style={S.lbl}>Tipe</label><select style={S.select} value={pgF.tipe} onChange={e=>setPgF({...pgF,tipe:e.target.value})}><option value="debit">Debit (Masuk)</option><option value="kredit">Kredit (Keluar)</option></select></div>
+              <div><label style={S.lbl}>Jumlah</label><input style={S.input} type="number" value={pgF.jumlah} onChange={e=>setPgF({...pgF,jumlah:e.target.value})} placeholder="Nominal"/></div>
+              <div><label style={S.lbl}>Keterangan</label><input style={S.input} value={pgF.ket} onChange={e=>setPgF({...pgF,ket:e.target.value})} placeholder="Keterangan transaksi"/></div>
+            </div>
+            <button style={{...S.btnPri,marginTop:12}} onClick={addEnt}>{pgF.tipe==="debit"?I.down:I.up} Catat {pgF.tipe==="debit"?"Debit":"Kredit"}</button>
+          </div>
+
+          <div style={S.card}><div style={S.cardHead}>Riwayat ({ent.length} transaksi)</div>
             {!rows.length?<div style={S.empty}>Belum ada transaksi</div>:
             <div style={S.tableWrap}><table style={S.table}><thead><tr>
               <th style={S.th}>No</th><th style={{...S.th,textAlign:"left"}}>Tanggal</th><th style={{...S.th,textAlign:"left"}}>Keterangan</th>
@@ -340,17 +385,17 @@ function MainApp({account:acc,onLogout,appData,setAppData,onSave}){
                 <td style={{...S.td,textAlign:"left",fontWeight:500,fontSize:12}}>{r.ket}</td>
                 <td style={{...S.td,fontWeight:600,color:r.debit?"#2980b9":"#ddd"}}>{r.debit?fmtRp(r.debit):"-"}</td>
                 <td style={{...S.td,fontWeight:600,color:r.kredit?"#c0392b":"#ddd"}}>{r.kredit?fmtRp(r.kredit):"-"}</td>
-                <td style={S.td}>{editPnId===r.id?
-                  <div style={{display:"flex",gap:3,alignItems:"center",justifyContent:"center"}}><input style={{...S.input,width:100,padding:"4px 6px",fontSize:11,textAlign:"right"}} type="number" value={editPnSaldo} onChange={e=>setEditPnSaldo(e.target.value)} onKeyDown={e=>e.key==="Enter"&&saveSM(r.id)} autoFocus/><button style={{...S.btnMini,borderColor:"#27ae60",color:"#27ae60",padding:"2px 6px"}} onClick={()=>saveSM(r.id)}>{I.save}</button><button style={{...S.btnMini,borderColor:"#999",color:"#999",padding:"2px 6px"}} onClick={()=>{setEditPnId(null);setEditPnSaldo("")}}>{I.x}</button></div>
+                <td style={S.td}>{editEntId===r.id?
+                  <div style={{display:"flex",gap:3,alignItems:"center",justifyContent:"center"}}><input style={{...S.input,width:100,padding:"4px 6px",fontSize:11,textAlign:"right"}} type="number" value={editEntSaldo} onChange={e=>setEditEntSaldo(e.target.value)} onKeyDown={e=>e.key==="Enter"&&saveSM(r.id)} autoFocus/><button style={{...S.btnMini,borderColor:"#27ae60",color:"#27ae60",padding:"2px 6px"}} onClick={()=>saveSM(r.id)}>{I.save}</button><button style={{...S.btnMini,borderColor:"#999",color:"#999",padding:"2px 6px"}} onClick={()=>{setEditEntId(null);setEditEntSaldo("")}}>{I.x}</button></div>
                   :<div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:4}}><span style={{fontWeight:700,color:r.saldoCalc>=0?"#27ae60":"#c0392b"}}>{fmtRp(r.saldoCalc)}</span>{r.saldoManual!==null&&r.saldoManual!==undefined&&<span style={{fontSize:8,color:"#e67e22",fontWeight:700}} title="Diedit manual">✎</span>}</div>
                 }</td>
                 <td style={S.td}><KebabMenu items={[
-                  {icon:I.edit,label:"Edit Saldo",onClick:()=>{setEditPnId(r.id);setEditPnSaldo(r.saldoCalc.toString())}},
+                  {icon:I.edit,label:"Edit Saldo",onClick:()=>{setEditEntId(r.id);setEditEntSaldo(r.saldoCalc.toString())}},
                   ...(r.saldoManual!==null&&r.saldoManual!==undefined?[{icon:I.ret,label:"Reset Saldo",onClick:()=>resetSM(r.id)}]:[]),
-                  {icon:I.trash,label:"Hapus",danger:true,onClick:()=>delPn(r.id)}
+                  {icon:I.trash,label:"Hapus",danger:true,onClick:()=>delEnt(r.id)}
                 ]}/></td>
               </tr>))}
-              <tr style={{background:"#f4f7f6"}}><td colSpan="3" style={{...S.td,textAlign:"right",fontWeight:700}}>Total</td><td style={{...S.td,fontWeight:700,color:"#2980b9"}}>{fmtRp(tDebit)}</td><td style={{...S.td,fontWeight:700,color:"#c0392b"}}>{fmtRp(tKredit)}</td><td style={{...S.td,fontWeight:700,color:saldo>=0?"#27ae60":"#c0392b"}}>{fmtRp(saldo)}</td><td style={S.td}/></tr>
+              <tr style={{background:"#f4f7f6"}}><td colSpan="3" style={{...S.td,textAlign:"right",fontWeight:700}}>Total</td><td style={{...S.td,fontWeight:700,color:"#2980b9"}}>{fmtRp(tD)}</td><td style={{...S.td,fontWeight:700,color:"#c0392b"}}>{fmtRp(tK)}</td><td style={{...S.td,fontWeight:700,color:curSaldo>=0?"#27ae60":"#c0392b"}}>{fmtRp(curSaldo)}</td><td style={S.td}/></tr>
             </tbody></table></div>}
           </div>
         </>)}
