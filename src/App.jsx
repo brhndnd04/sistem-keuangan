@@ -517,73 +517,60 @@ function MainApp({account:acc,onLogout,appData,setAppData,onSave}){
     {tab==="pinjaman"&&(()=>{
       const pgCalcS=(ent)=>{let rs=0;(ent||[]).forEach(x=>{if(x.saldoManual!=null)rs=x.saldoManual;else rs=rs+(x.debit||0)-(x.kredit||0)});return rs};
       const pgAll=pengajuan||[];
-      const dariPg=pgAll.find(x=>x.id===lF.dari);
-      const kePg=pgAll.find(x=>x.id===lF.ke);
-      const dariSaldo=dariPg?pgCalcS(dariPg.entries):0;
+      // Gabungan: proyek biasa (saldo = sisa anggaran) + proyek pengajuan (saldo = debit-kredit)
+      const allP=[
+        ...projects.map(p=>{const cp=cP(p);return{id:p.id,name:p.name,saldo:cp.sisaAnggaran,tipe:"proyek"}}),
+        ...pgAll.map(pg=>({id:pg.id,name:pg.name,saldo:pgCalcS(pg.entries),tipe:"pengajuan"}))
+      ];
+      const dariP=allP.find(x=>x.id===lF.dari);
+      const keP=allP.find(x=>x.id===lF.ke);
       const jml=NM(lF.jumlah);
-      const saldoKurang=dariPg&&jml>0&&jml>dariSaldo;
+      const saldoKurang=dariP&&jml>0&&jml>dariP.saldo;
 
       const buatPinjaman=()=>{
         if(!lF.dari||!lF.ke||!lF.jumlah||lF.dari===lF.ke)return;
-        if(saldoKurang){alert(`Saldo ${dariPg.name} tidak cukup! Saldo: ${fmtRp(dariSaldo)}, Pinjaman: ${fmtRp(jml)}`);return}
-        const now=fmtShort(new Date());const ket=lF.ket||"Pinjaman antar proyek";
-        // Kredit dari proyek pemberi
-        const dariEnt=[...(dariPg.entries||[]),{id:uid(),tgl:now,ket:`Pinjam ke ${kePg.name}${lF.ket?" — "+lF.ket:""}`,debit:0,kredit:jml,saldoManual:null}];
-        // Debit ke proyek penerima
-        const keEnt=[...(kePg.entries||[]),{id:uid(),tgl:now,ket:`Pinjam dari ${dariPg.name}${lF.ket?" — "+lF.ket:""}`,debit:jml,kredit:0,saldoManual:null}];
-        setPengajuan(pengajuan.map(p=>p.id===lF.dari?{...p,entries:dariEnt}:p.id===lF.ke?{...p,entries:keEnt}:p));
-        setLoans([...loans,{id:uid(),dariId:lF.dari,keId:lF.ke,dari:dariPg.name,ke:kePg.name,jumlah:jml,ket:lF.ket,tgl:fmtTgl(new Date())}]);
+        if(saldoKurang){alert(`Saldo ${dariP.name} tidak cukup! Saldo: ${fmtRp(dariP.saldo)}, Pinjaman: ${fmtRp(jml)}`);return}
+        const now=fmtShort(new Date());
+        // Jika proyek pengajuan → catat di entries
+        if(dariP.tipe==="pengajuan"){const pg=pgAll.find(x=>x.id===lF.dari);if(pg)setPengajuan(pengajuan.map(p=>p.id===lF.dari?{...p,entries:[...(p.entries||[]),{id:uid(),tgl:now,ket:`Pinjam ke ${keP.name}${lF.ket?" — "+lF.ket:""}`,debit:0,kredit:jml,saldoManual:null}]}:p))}
+        if(keP.tipe==="pengajuan"){const pg=pgAll.find(x=>x.id===lF.ke);if(pg)setPengajuan(prev=>prev.map(p=>p.id===lF.ke?{...p,entries:[...(p.entries||[]),{id:uid(),tgl:now,ket:`Pinjam dari ${dariP.name}${lF.ket?" — "+lF.ket:""}`,debit:jml,kredit:0,saldoManual:null}]}:p))}
+        setLoans([...loans,{id:uid(),dariId:lF.dari,keId:lF.ke,dari:dariP.name,ke:keP.name,dariTipe:dariP.tipe,keTipe:keP.tipe,jumlah:jml,ket:lF.ket,tgl:fmtTgl(new Date())}]);
         setLF({dari:"",ke:"",jumlah:"",ket:""});
       };
 
-      const kembalikanPinjaman=(loan)=>{
+      const kembalikan=(loan)=>{
         const now=fmtShort(new Date());
-        const pgDari=pgAll.find(x=>x.id===loan.dariId||x.name===loan.dari);
-        const pgKe=pgAll.find(x=>x.id===loan.keId||x.name===loan.ke);
-        if(pgKe){const keSaldo=pgCalcS(pgKe.entries);if(loan.jumlah>keSaldo){alert(`Saldo ${pgKe.name} tidak cukup untuk mengembalikan! Saldo: ${fmtRp(keSaldo)}`);return}}
-        const newPg=pengajuan.map(p=>{
-          if((p.id===loan.dariId||p.name===loan.dari)){return{...p,entries:[...(p.entries||[]),{id:uid(),tgl:now,ket:`Pengembalian dari ${loan.ke}`,debit:loan.jumlah,kredit:0,saldoManual:null}]}}
-          if((p.id===loan.keId||p.name===loan.ke)){return{...p,entries:[...(p.entries||[]),{id:uid(),tgl:now,ket:`Pengembalian ke ${loan.dari}`,debit:0,kredit:loan.jumlah,saldoManual:null}]}}
+        // Cek saldo penerima cukup untuk mengembalikan
+        const keCheck=allP.find(x=>x.id===loan.keId||x.name===loan.ke);
+        if(keCheck&&loan.jumlah>keCheck.saldo){alert(`Saldo ${keCheck.name} tidak cukup! Saldo: ${fmtRp(keCheck.saldo)}`);return}
+        // Catat pengembalian di pengajuan
+        setPengajuan(prev=>prev.map(p=>{
+          if((p.id===loan.dariId||p.name===loan.dari)&&(loan.dariTipe==="pengajuan")){return{...p,entries:[...(p.entries||[]),{id:uid(),tgl:now,ket:`Pengembalian dari ${loan.ke}`,debit:loan.jumlah,kredit:0,saldoManual:null}]}}
+          if((p.id===loan.keId||p.name===loan.ke)&&(loan.keTipe==="pengajuan")){return{...p,entries:[...(p.entries||[]),{id:uid(),tgl:now,ket:`Pengembalian ke ${loan.dari}`,debit:0,kredit:loan.jumlah,saldoManual:null}]}}
           return p;
-        });
-        setPengajuan(newPg);
+        }));
         setLoans(loans.filter(x=>x.id!==loan.id));
       };
 
       return(<div>
-        {/* Saldo semua proyek */}
-        <div style={S.card}><div style={S.cardHead}>Saldo Proyek Pengajuan</div>
-          {!pgAll.length?<div style={S.empty}>Belum ada proyek pengajuan. Buat dulu di menu {L.pengajuan}.</div>:
-          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))",gap:8}}>
-            {pgAll.map(pg=>{const ps=pgCalcS(pg.entries);return(
-              <div key={pg.id} style={{background:T.iBg,borderRadius:10,padding:"12px 14px",border:`1px solid ${T.cb}`}}>
-                <div style={{fontSize:12,fontWeight:600,color:T.tx}}>{pg.name}</div>
-                <div style={{fontSize:18,fontWeight:800,color:ps>=0?"#00ff88":"#ff6b6b",marginTop:4}}>{fmtRp(ps)}</div>
-                <div style={{fontSize:10,color:T.sub,marginTop:2}}>{(pg.entries||[]).length} transaksi</div>
-              </div>
-            )})}
-          </div>}
-        </div>
-
-        {/* Form Pinjaman */}
-        <div style={S.card}><div style={S.cardHead}>Pinjaman Antar Proyek Pengajuan</div>
-          {pgAll.length<2?<div style={S.empty}>Perlu minimal 2 proyek pengajuan</div>:<>
+        <div style={S.card}><div style={S.cardHead}>Pinjaman Antar Proyek</div>
+          {allP.length<2?<div style={S.empty}>Perlu minimal 2 proyek</div>:<>
             <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))",gap:8}}>
               <div><label style={S.lbl}>Dari (Pemberi)</label>
                 <select style={S.select} value={lF.dari} onChange={e=>setLF({...lF,dari:e.target.value})}>
                   <option value="">— Pilih —</option>
-                  {pgAll.filter(p=>p.id!==lF.ke).map(p=>{const ps=pgCalcS(p.entries);return(<option key={p.id} value={p.id}>{p.name} (Saldo: {fmtRp(ps)})</option>)})}
+                  {allP.filter(p=>p.id!==lF.ke).map(p=>(<option key={p.id} value={p.id}>{p.name} — {fmtRp(p.saldo)}</option>))}
                 </select>
-                {dariPg&&<div style={{fontSize:10,marginTop:4,color:dariSaldo>0?"#00ff88":"#ff6b6b",fontWeight:600}}>Saldo: {fmtRp(dariSaldo)}</div>}
+                {dariP&&<div style={{fontSize:10,marginTop:4,color:dariP.saldo>0?"#00ff88":"#ff6b6b",fontWeight:600}}>Saldo: {fmtRp(dariP.saldo)} ({dariP.tipe==="proyek"?"Proyek":"Pengajuan"})</div>}
               </div>
               <div><label style={S.lbl}>Ke (Penerima)</label>
                 <select style={S.select} value={lF.ke} onChange={e=>setLF({...lF,ke:e.target.value})}>
                   <option value="">— Pilih —</option>
-                  {pgAll.filter(p=>p.id!==lF.dari).map(p=>{const ps=pgCalcS(p.entries);return(<option key={p.id} value={p.id}>{p.name} (Saldo: {fmtRp(ps)})</option>)})}
+                  {allP.filter(p=>p.id!==lF.dari).map(p=>(<option key={p.id} value={p.id}>{p.name} — {fmtRp(p.saldo)}</option>))}
                 </select>
               </div>
               <div><label style={S.lbl}>Jumlah</label><input style={{...S.input,borderColor:saldoKurang?"#ff6b6b":T.iBr}} type="number" value={lF.jumlah} onChange={e=>setLF({...lF,jumlah:e.target.value})}/>
-                {saldoKurang&&<div style={{fontSize:10,color:"#ff6b6b",marginTop:4,fontWeight:600}}>⚠ Saldo tidak cukup! Tersedia: {fmtRp(dariSaldo)}</div>}
+                {saldoKurang&&<div style={{fontSize:10,color:"#ff6b6b",marginTop:4,fontWeight:600}}>⚠ Saldo tidak cukup! Tersedia: {fmtRp(dariP.saldo)}</div>}
               </div>
               <div><label style={S.lbl}>Keterangan</label><input style={S.input} value={lF.ket} onChange={e=>setLF({...lF,ket:e.target.value})} placeholder="Opsional"/></div>
             </div>
@@ -591,7 +578,6 @@ function MainApp({account:acc,onLogout,appData,setAppData,onSave}){
           </>}
         </div>
 
-        {/* Daftar Pinjaman Aktif */}
         <div style={S.card}><div style={S.cardHead}>Pinjaman Aktif ({loans.length})</div>
           {!loans.length?<div style={S.empty}>Tidak ada pinjaman aktif</div>:
           <div style={{display:"flex",flexDirection:"column",gap:8}}>
@@ -608,7 +594,7 @@ function MainApp({account:acc,onLogout,appData,setAppData,onSave}){
                   </div>
                   <div style={{display:"flex",alignItems:"center",gap:10}}>
                     <span style={{fontWeight:800,fontSize:16,color:T.tx}}>{fmtRp(l.jumlah)}</span>
-                    <button style={S.btnRet} onClick={()=>kembalikanPinjaman(l)}>{I.ret} Kembalikan</button>
+                    <button style={S.btnRet} onClick={()=>kembalikan(l)}>{I.ret} Kembalikan</button>
                   </div>
                 </div>
               </div>
