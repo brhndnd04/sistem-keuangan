@@ -162,6 +162,7 @@ return(<div style={{fontFamily:"'Plus Jakarta Sans',sans-serif",minHeight:"100vh
 // ══════ SLIP DETAIL ══════
 function SlipDetail({emp,onBack,onUpdate,S,T}){
   const s=emp.slip||mkSlip();const[form,setForm]=useState({...s});const[slTab,setSlTab]=useState("current");const[kbF,setKbF]=useState({jumlah:"",ket:""});
+  const[editRw,setEditRw]=useState(null);const[rwF,setRwF]=useState({});
   const c=calcSlip(form);const sB=emp.saldo||0;const harusBayar=c.gajiBersih+sB;const dibayar=form.dibayarkan||0;const saldoBaru=harusBayar-dibayar;const sKA=Math.max(0,(emp.kasbon||0)-form.potKasbon);
   const sF=(k,v)=>setForm({...form,[k]:NM(v)});const saved=JSON.stringify(form)===JSON.stringify(s);
   const saveSlip=()=>onUpdate({...emp,slip:{...form}});
@@ -219,7 +220,6 @@ function SlipDetail({emp,onBack,onUpdate,S,T}){
     </div>)}
 
     {slTab==="history"&&(()=>{
-      const[editRw,setEditRw]=useState(null);const[rwF,setRwF]=useState({});
       const rw=emp.riwayat||[];
       const delRw=(idx)=>{if(confirm("Hapus riwayat periode ini?"))onUpdate({...emp,riwayat:rw.filter((_,i)=>i!==idx)})};
       const startEdit=(idx)=>{const r=rw[idx];setEditRw(idx);setRwF({periode:r.periode,gajiBersih:r.gajiBersih||0,saldoSblm:r.saldoSblm||0,dibayarkan:r.dibayarkan||r.totalDiterima||0})};
