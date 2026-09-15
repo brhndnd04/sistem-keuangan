@@ -294,13 +294,105 @@ function MainApp({account:acc,onLogout,appData,setAppData,onSave}){
 
   return(<div style={S.shell}><style>{gCSS}</style><Side/><div style={S.content}><Top t={navs.find(n=>n.id===tab)?.lb}/>
   <main style={S.main}>
-    {tab==="dashboard"&&(<div>
-      <div style={{background:`linear-gradient(135deg,${T.sA},${T.sB})`,borderRadius:14,padding:"20px 24px",color:"#e0e0f0",marginBottom:18,border:`1px solid ${T.cb}`}}><div style={{fontSize:16,fontWeight:600}}>{L.selamat}, {acc.nama}</div><div style={{fontSize:11,opacity:.5,marginTop:2}}>{L.ringkasan} · {L.menyimpan.replace("...","")}{I.cloud}</div></div>
-      <div style={S.grid4}>{[["Total Anggaran",fmtRp(tAng),"#1a3c34"],["Dicairkan",fmtRp(tCair),"#c0392b"],["Sisa",fmtRp(tSisa),"#27ae60"],["Saldo",fmtRp(saldo),saldo>=0?"#27ae60":"#c0392b"]].map(([l,v,c],i)=>(<div key={i} style={{...S.statCard,borderTop:`3px solid ${c}`}}><div style={S.statLbl}>{l}</div><div style={{...S.statVal,color:c}}>{v}</div></div>))}</div>
-      <div style={S.card}><div style={S.cardHead}>Status Pencairan</div><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(110px,1fr))",gap:8,marginBottom:12}}>{STATUS_LIST.map(st=>{const sc=stC(st);return(<div key={st} style={{background:sc.bg,borderRadius:8,padding:"10px 12px",textAlign:"center"}}><div style={{fontSize:9,fontWeight:700,color:sc.fg}}>{st}</div><div style={{fontSize:16,fontWeight:700,color:sc.fg}}>{pcC(st)}</div><div style={{fontSize:10,fontWeight:600,color:sc.fg}}>{fmtRp(pcS(st))}</div></div>)})}</div></div>
-      <div style={S.grid2}><div style={S.statCard}><div style={S.statLbl}>Karyawan: {eAkt} aktif</div><div style={{...S.statVal,color:"#b8b2ff"}}>{fmtRp(tGaji)}</div><div style={S.statMeta}>Total diterima/bulan</div></div><div style={{...S.statCard,borderTop:"3px solid #e67e22"}}><div style={S.statLbl}>Transaksi</div><div style={{display:"flex",justifyContent:"space-between",marginTop:6}}><div><div style={{fontSize:10,color:"#666"}}>Masuk</div><div style={{fontWeight:700,color:"#27ae60"}}>{fmtRp(tIn)}</div></div><div style={{textAlign:"right"}}><div style={{fontSize:10,color:"#666"}}>Keluar</div><div style={{fontWeight:700,color:"#c0392b"}}>{fmtRp(tOut)}</div></div></div></div></div>
-      {(()=>{const pgCalc=(ent)=>{let rs=0;(ent||[]).forEach(x=>{if(x.saldoManual!=null)rs=x.saldoManual;else rs=rs+(x.debit||0)-(x.kredit||0)});return rs};const pgAll=pengajuan||[];const gD=pgAll.reduce((s,pg)=>(pg.entries||[]).reduce((a,x)=>a+(x.debit||0),0)+s,0);const gK=pgAll.reduce((s,pg)=>(pg.entries||[]).reduce((a,x)=>a+(x.kredit||0),0)+s,0);const gS=pgAll.reduce((s,pg)=>s+pgCalc(pg.entries),0);return pgAll.length>0?(<div style={{...S.card,borderLeft:`4px solid ${T.ac}`}}><div style={S.cardHead}>{I.wallet} {L.pengajuan}</div><div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginBottom:12}}><div style={{background:T.acBg,borderRadius:8,padding:"10px 12px",textAlign:"center"}}><div style={{fontSize:9,fontWeight:700,color:"#2980b9"}}>Total Debit</div><div style={{fontSize:16,fontWeight:700,color:"#2980b9"}}>{fmtRp(gD)}</div></div><div style={{background:"rgba(192,57,43,0.1)",borderRadius:8,padding:"10px 12px",textAlign:"center"}}><div style={{fontSize:9,fontWeight:700,color:"#c0392b"}}>Total Kredit</div><div style={{fontSize:16,fontWeight:700,color:"#c0392b"}}>{fmtRp(gK)}</div></div><div style={{background:gS>=0?"rgba(39,174,96,0.1)":"rgba(192,57,43,0.1)",borderRadius:8,padding:"10px 12px",textAlign:"center"}}><div style={{fontSize:9,fontWeight:700,color:gS>=0?"#27ae60":"#c0392b"}}>Saldo</div><div style={{fontSize:16,fontWeight:700,color:gS>=0?"#27ae60":"#c0392b"}}>{fmtRp(gS)}</div></div></div><div style={{display:"flex",flexDirection:"column",gap:6}}>{pgAll.map(pg=>{const ps=pgCalc(pg.entries);return(<div key={pg.id} style={{display:"flex",justifyContent:"space-between",padding:"8px 12px",background:T.iBg,borderRadius:8,border:`1px solid ${T.cb}`}}><div><div style={{fontWeight:600,fontSize:12,color:T.tx}}>{pg.name}</div><div style={{fontSize:10,color:T.sub}}>{(pg.entries||[]).length} transaksi</div></div><div style={{textAlign:"right"}}><div style={{fontWeight:700,fontSize:14,color:ps>=0?"#27ae60":"#c0392b"}}>{fmtRp(ps)}</div></div></div>)})}</div></div>):null})()}
-    </div>)}
+    {tab==="dashboard"&&(()=>{
+      // Pengajuan calc
+      const pgCalc=(ent)=>{let rs=0;(ent||[]).forEach(x=>{if(x.saldoManual!=null)rs=x.saldoManual;else rs=rs+(x.debit||0)-(x.kredit||0)});return rs};
+      const pgAll=pengajuan||[];const gPD=pgAll.reduce((s,pg)=>(pg.entries||[]).reduce((a,x)=>a+(x.debit||0),0)+s,0);const gPK=pgAll.reduce((s,pg)=>(pg.entries||[]).reduce((a,x)=>a+(x.kredit||0),0)+s,0);const gPS=pgAll.reduce((s,pg)=>s+pgCalc(pg.entries),0);
+      // Donut chart SVG
+      const donutTotal=tIn+tOut||1;const inPct=(tIn/donutTotal)*100;const outPct=(tOut/donutTotal)*100;
+      const inDash=`${(inPct/100)*251.2} ${251.2}`;const outDash=`${(outPct/100)*251.2} ${251.2}`;const outOff=-(inPct/100)*251.2;
+      // Status icons
+      const stIcons=["📋","⏳","✅","🎉"];
+      return(<div>
+      {/* Welcome */}
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:`linear-gradient(135deg,${T.sA},${T.sB})`,borderRadius:16,padding:"22px 24px",color:"#e0e0f0",marginBottom:16,border:`1px solid ${T.cb}`}}>
+        <div><div style={{fontSize:18,fontWeight:700}}>{L.selamat}, {acc.nama}</div><div style={{fontSize:11,opacity:.5,marginTop:3}}>{L.ringkasan} · {saving?L.menyimpan:""} {I.cloud}</div></div>
+        <div style={{width:44,height:44,borderRadius:"50%",background:T.acBg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,fontWeight:800,color:T.acL,border:`2px solid ${T.ac}`}}>{acc.nama.charAt(0)}</div>
+      </div>
+
+      {/* Top Stats */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:16}}>
+        {[[L.tAnggaran,fmtRp(tAng),T.ac,"📊"],[L.dicairkan,fmtRp(tCair),"#e74c3c","💸"],[L.sisa,fmtRp(tSisa),"#27ae60","💰"],[L.saldo,fmtRp(saldo),saldo>=0?"#27ae60":"#e74c3c","🏦"]].map(([l,v,c,ic],i)=>(
+          <div key={i} style={{background:T.card,borderRadius:12,padding:"14px 14px 12px",border:`1px solid ${T.cb}`,position:"relative",overflow:"hidden"}}>
+            <div style={{position:"absolute",top:8,right:10,fontSize:20,opacity:.15}}>{ic}</div>
+            <div style={{fontSize:9,fontWeight:600,color:T.sub,textTransform:"uppercase",letterSpacing:.5}}>{l}</div>
+            <div style={{fontSize:17,fontWeight:800,color:c,marginTop:6,fontVariantNumeric:"tabular-nums"}}>{v}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Progress bar */}
+      <div style={{background:T.card,borderRadius:10,padding:"10px 16px",border:`1px solid ${T.cb}`,marginBottom:16,display:"flex",alignItems:"center",gap:12}}>
+        <span style={{fontSize:11,color:T.sub,whiteSpace:"nowrap"}}>{L.sisa} Anggaran</span>
+        <div style={{flex:1,height:8,background:T.iBg,borderRadius:4,overflow:"hidden"}}><div style={{height:"100%",borderRadius:4,background:`linear-gradient(90deg,${T.ac},${T.acL})`,width:`${Math.min(tAng>0?((tAng-tCair)/tAng)*100:0,100)}%`,transition:"width 0.5s"}}/></div>
+        <span style={{fontSize:12,fontWeight:700,color:T.acL}}>{tAng>0?((tAng-tCair)/tAng*100).toFixed(0):0}%</span>
+      </div>
+
+      {/* Status Pencairan - flow style */}
+      <div style={{...S.card,marginBottom:16}}><div style={S.cardHead}>Status Pencairan</div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8}}>
+          {STATUS_LIST.map((st,idx)=>{const sc=stC(st);const cnt=pcC(st);const amt=pcS(st);return(
+            <div key={st} style={{textAlign:"center",padding:"12px 8px",borderRadius:10,background:sc.bg,position:"relative"}}>
+              <div style={{fontSize:24,marginBottom:4}}>{stIcons[idx]}</div>
+              <div style={{fontSize:9,fontWeight:700,color:sc.fg,marginBottom:2}}>{st}</div>
+              <div style={{fontSize:20,fontWeight:800,color:sc.fg}}>{cnt}</div>
+              <div style={{fontSize:10,fontWeight:600,color:sc.fg,opacity:.8}}>{fmtRp(amt)}</div>
+              {idx<3&&<div style={{position:"absolute",right:-8,top:"50%",transform:"translateY(-50%)",color:T.sub,fontSize:14,zIndex:2}}>›</div>}
+            </div>
+          )})}
+        </div>
+      </div>
+
+      {/* Ringkasan Operasional - 2 columns */}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
+        {/* Karyawan + Gaji */}
+        <div style={{...S.card,margin:0}}>
+          <div style={{fontSize:11,fontWeight:700,color:T.tx,marginBottom:10}}>Ringkasan Operasional</div>
+          <div style={{display:"flex",alignItems:"center",gap:12}}>
+            <div style={{width:48,height:48,borderRadius:12,background:T.acBg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22}}>👥</div>
+            <div><div style={{fontSize:10,color:T.sub}}>Karyawan: {eAkt} {L.aktif}</div><div style={{fontSize:18,fontWeight:800,color:T.acL}}>{fmtRp(tGaji)}</div><div style={{fontSize:9,color:T.mut}}>{L.gajiBulan}</div></div>
+          </div>
+        </div>
+        {/* Transaksi Donut */}
+        <div style={{...S.card,margin:0}}>
+          <div style={{fontSize:11,fontWeight:700,color:T.tx,marginBottom:10}}>{L.transaksi}</div>
+          <div style={{display:"flex",alignItems:"center",gap:14}}>
+            <svg width="64" height="64" viewBox="0 0 90 90"><circle cx="45" cy="45" r="40" fill="none" stroke={T.iBg} strokeWidth="10"/>{tIn>0&&<circle cx="45" cy="45" r="40" fill="none" stroke="#27ae60" strokeWidth="10" strokeDasharray={inDash} strokeDashoffset="0" transform="rotate(-90 45 45)" strokeLinecap="round"/>}{tOut>0&&<circle cx="45" cy="45" r="40" fill="none" stroke="#e74c3c" strokeWidth="10" strokeDasharray={outDash} strokeDashoffset={outOff} transform="rotate(-90 45 45)" strokeLinecap="round"/>}</svg>
+            <div style={{fontSize:11}}>
+              <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}><div style={{width:8,height:8,borderRadius:"50%",background:"#27ae60"}}/><span style={{color:T.sub}}>Masuk</span><span style={{fontWeight:700,color:"#27ae60",marginLeft:"auto"}}>{fmtRp(tIn)}</span></div>
+              <div style={{display:"flex",alignItems:"center",gap:6}}><div style={{width:8,height:8,borderRadius:"50%",background:"#e74c3c"}}/><span style={{color:T.sub}}>Keluar</span><span style={{fontWeight:700,color:"#e74c3c",marginLeft:"auto"}}>{fmtRp(tOut)}</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom 2 columns: Proyek Pengajuan + Daftar Proyek */}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+        {/* Proyek Pengajuan */}
+        <div style={{...S.card,margin:0}}>
+          <div style={S.cardHead}>{L.pengajuan}</div>
+          {!pgAll.length?<div style={S.empty}>Belum ada</div>:<>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:6,marginBottom:10}}>
+              <div style={{background:"rgba(41,128,185,0.1)",borderRadius:6,padding:"8px 6px",textAlign:"center"}}><div style={{fontSize:8,fontWeight:700,color:"#2980b9"}}>Debit</div><div style={{fontSize:13,fontWeight:800,color:"#2980b9"}}>{fmtRp(gPD)}</div></div>
+              <div style={{background:"rgba(231,76,60,0.1)",borderRadius:6,padding:"8px 6px",textAlign:"center"}}><div style={{fontSize:8,fontWeight:700,color:"#e74c3c"}}>Kredit</div><div style={{fontSize:13,fontWeight:800,color:"#e74c3c"}}>{fmtRp(gPK)}</div></div>
+              <div style={{background:gPS>=0?"rgba(39,174,96,0.1)":"rgba(231,76,60,0.1)",borderRadius:6,padding:"8px 6px",textAlign:"center"}}><div style={{fontSize:8,fontWeight:700,color:gPS>=0?"#27ae60":"#e74c3c"}}>{L.saldo}</div><div style={{fontSize:13,fontWeight:800,color:gPS>=0?"#27ae60":"#e74c3c"}}>{fmtRp(gPS)}</div></div>
+            </div>
+            <div style={S.tableWrap}><table style={{...S.table,fontSize:10}}><thead><tr><th style={{...S.th,textAlign:"left",fontSize:8}}>Nama Proyek</th><th style={{...S.th,fontSize:8}}>Debit</th><th style={{...S.th,fontSize:8}}>Kredit</th><th style={{...S.th,fontSize:8}}>{L.saldo}</th></tr></thead><tbody>
+              {pgAll.map((pg,i)=>{const ps=pgCalc(pg.entries);return(<tr key={pg.id} style={i%2?{background:T.iBg}:{}}><td style={{...S.td,textAlign:"left",fontWeight:600,fontSize:11}}>{pg.name}</td><td style={{...S.td,color:"#2980b9"}}>{fmtRp((pg.entries||[]).reduce((a,x)=>a+(x.debit||0),0))}</td><td style={{...S.td,color:"#e74c3c"}}>{fmtRp((pg.entries||[]).reduce((a,x)=>a+(x.kredit||0),0))}</td><td style={{...S.td,fontWeight:700,color:ps>=0?"#27ae60":"#e74c3c"}}>{fmtRp(ps)}</td></tr>)})}
+            </tbody></table></div>
+          </>}
+        </div>
+        {/* Daftar Proyek */}
+        <div style={{...S.card,margin:0}}>
+          <div style={S.cardHead}>Daftar {L.proyek}</div>
+          {!projects.length?<div style={S.empty}>Belum ada</div>:
+          <div style={S.tableWrap}><table style={{...S.table,fontSize:10}}><thead><tr><th style={{...S.th,textAlign:"left",fontSize:8}}>{L.proyek}</th><th style={{...S.th,fontSize:8}}>Anggaran</th><th style={{...S.th,fontSize:8}}>Kredit</th></tr></thead><tbody>
+            {projects.map((p,i)=>{const cp=cP(p);return(<tr key={p.id} style={i%2?{background:T.iBg}:{}} onClick={()=>{setDetP(p.id);setTab("proyek")}} className="hover"><td style={{...S.td,textAlign:"left",fontWeight:600,fontSize:11,cursor:"pointer",color:T.acL}}>{p.name}</td><td style={S.td}>{fmtRp(p.anggaran)}</td><td style={{...S.td,color:"#e74c3c"}}>{fmtRp(cp.totalCair)}</td></tr>)})}
+          </tbody></table></div>}
+        </div>
+      </div>
+    </div>);
+    })()}
 
     {tab==="proyek"&&(<div>
       <div style={S.card}><div style={S.cardHead}>Tambah Proyek</div><div style={{display:"flex",gap:8,flexWrap:"wrap"}}><input style={S.input} placeholder="Nama" value={pF.name} onChange={e=>setPF({...pF,name:e.target.value})}/><input style={{...S.input,maxWidth:180}} type="number" placeholder="Anggaran" value={pF.anggaran} onChange={e=>setPF({...pF,anggaran:e.target.value})}/>{editP?<><button style={S.btnPri} onClick={()=>{setProjects(projects.map(p=>p.id===editP?{...p,name:pF.name,anggaran:NM(pF.anggaran)}:p));setEditP(null);setPF({name:"",anggaran:""})}}>Simpan</button><button style={S.btnSec} onClick={()=>{setEditP(null);setPF({name:"",anggaran:""})}}>Batal</button></>:<button style={S.btnPri} onClick={()=>{if(!pF.name||!pF.anggaran)return;setProjects([...projects,{id:uid(),name:pF.name,anggaran:NM(pF.anggaran),pencairan:[]}]);setPF({name:"",anggaran:""})}}>{I.plus} Tambah</button>}</div></div>
