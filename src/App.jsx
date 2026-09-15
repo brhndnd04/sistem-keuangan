@@ -229,7 +229,6 @@ function SlipDetail({emp,onBack,onUpdate,S,T}){
       return(<tr key={i} style={i%2?{background:"rgba(255,255,255,0.03)"}:{}}><td style={{...S.td,textAlign:"left"}}><div style={{fontWeight:600}}>{r.periode}</div><div style={{fontSize:10,color:"#666"}}>{r.tgl}</div></td><td style={{...S.td,fontWeight:600}}>{fmtRp(r.gajiBersih)}</td><td style={{...S.td,color:(r.saldoSblm||0)>=0?"#27ae60":"#c0392b"}}>{(r.saldoSblm||0)>=0?"+":""}{fmtRp(r.saldoSblm||0)}</td><td style={S.td}>{fmtRp(hb)}</td><td style={{...S.td,fontWeight:700,color:"#b8b2ff"}}>{fmtRp(db)}</td><td style={{...S.td,fontWeight:700,color:(r.saldoAkhir||0)>=0?"#27ae60":"#c0392b"}}>{(r.saldoAkhir||0)>=0?"+":""}{fmtRp(r.saldoAkhir||0)}</td><td style={S.td}><KebabMenu items={[{icon:I.edit,label:"Edit",onClick:()=>startEdit(i)},{icon:I.trash,label:"Hapus",danger:true,onClick:()=>delRw(i)}]}/></td></tr>)})}
     </tbody></table></div>}</div>);
     })()}
-    </tbody></table></div>}</div>)}
   </div>);
 }
 
