@@ -401,10 +401,59 @@ function MainApp({account:acc,onLogout,appData,setAppData,onSave}){
     </div>);
     })()}
 
-    {tab==="proyek"&&(<div>
-      <div style={S.card}><div style={S.cardHead}>Tambah Proyek</div><div style={{display:"flex",gap:8,flexWrap:"wrap"}}><input style={S.input} placeholder="Nama" value={pF.name} onChange={e=>setPF({...pF,name:e.target.value})}/><input style={{...S.input,maxWidth:180}} type="number" placeholder="Anggaran" value={pF.anggaran} onChange={e=>setPF({...pF,anggaran:e.target.value})}/>{editP?<><button style={S.btnPri} onClick={()=>{setProjects(projects.map(p=>p.id===editP?{...p,name:pF.name,anggaran:NM(pF.anggaran)}:p));setEditP(null);setPF({name:"",anggaran:""})}}>Simpan</button><button style={S.btnSec} onClick={()=>{setEditP(null);setPF({name:"",anggaran:""})}}>Batal</button></>:<button style={S.btnPri} onClick={()=>{if(!pF.name||!pF.anggaran)return;setProjects([...projects,{id:uid(),name:pF.name,anggaran:NM(pF.anggaran),pencairan:[]}]);setPF({name:"",anggaran:""})}}>{I.plus} Tambah</button>}</div></div>
-      <div style={S.card}><div style={S.cardHead}>Daftar Proyek</div>{!projects.length?<div style={S.empty}>Belum ada</div>:<div style={S.tableWrap}><table style={S.table}><thead><tr><th style={S.th}>No</th><th style={{...S.th,textAlign:"left"}}>Proyek</th><th style={S.th}>Anggaran</th><th style={S.th}>Cair</th><th style={S.th}>Sisa</th><th style={S.th}>Aksi</th></tr></thead><tbody>{projects.map((p,i)=>{const cp=cP(p);return(<tr key={p.id} style={i%2?{background:"rgba(255,255,255,0.03)"}:{}}><td style={S.td}>{i+1}</td><td style={{...S.td,textAlign:"left"}}><button style={S.linkBtn} onClick={()=>setDetP(p.id)}>{p.name}</button></td><td style={S.td}>{fmtRp(p.anggaran)}</td><td style={{...S.td,color:"#c0392b",fontWeight:600}}>{fmtRp(cp.totalCair)}</td><td style={{...S.td,fontWeight:700,color:cp.sisaAnggaran>=0?"#27ae60":"#c0392b"}}>{fmtRp(cp.sisaAnggaran)}</td><td style={S.td}><div style={{display:"flex",gap:4,justifyContent:"center"}}><button style={{...S.btnMini,borderColor:"#6c63ff",color:"#b8b2ff"}} onClick={()=>setDetP(p.id)}>{I.eye()} Detail</button><KebabMenu items={[{icon:I.edit,label:"Edit",onClick:()=>{setEditP(p.id);setPF({name:p.name,anggaran:p.anggaran.toString()})}},{icon:I.trash,label:"Hapus",danger:true,onClick:()=>{if(confirm(`Hapus proyek "${p.name}"?`))setProjects(projects.filter(x=>x.id!==p.id))}}]}/></div></td></tr>)})}</tbody></table></div>}</div>
-    </div>)}
+    {tab==="proyek"&&(()=>{
+      const tAng2=projects.reduce((s,p)=>s+p.anggaran,0);const tCair2=projects.reduce((s,p)=>s+cP(p).totalCair,0);const tSisa2=tAng2-tCair2;
+      return(<div>
+      {/* Summary Cards */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginBottom:16}}>
+        {[["Total Anggaran",fmtRp(tAng2),T.ac,"📊"],["Dicairkan",fmtRp(tCair2),"#ff6b6b","💸"],["Sisa Anggaran",fmtRp(tSisa2),tSisa2>=0?"#00ff88":"#ff6b6b","💰"]].map(([l,v,c,ic],i)=>(
+          <div key={i} style={{background:T.card,borderRadius:12,padding:"14px 16px",border:`1px solid ${T.cb}`,position:"relative",overflow:"hidden"}}>
+            <div style={{position:"absolute",top:6,right:10,fontSize:20,opacity:.12}}>{ic}</div>
+            <div style={{fontSize:9,fontWeight:600,color:T.sub,textTransform:"uppercase",letterSpacing:.8}}>{l}</div>
+            <div style={{fontSize:18,fontWeight:800,color:c,marginTop:6,fontVariantNumeric:"tabular-nums"}}>{v}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Form Tambah */}
+      <div style={S.card}><div style={S.cardHead}>Tambah Proyek</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr auto",gap:8,alignItems:"end"}}>
+          <div><label style={S.lbl}>Nama Proyek</label><input style={S.input} placeholder="Nama proyek" value={pF.name} onChange={e=>setPF({...pF,name:e.target.value})}/></div>
+          <div><label style={S.lbl}>Anggaran (Rp)</label><input style={S.input} type="number" placeholder="Jumlah anggaran" value={pF.anggaran} onChange={e=>setPF({...pF,anggaran:e.target.value})}/></div>
+          {editP?<div style={{display:"flex",gap:6}}><button style={S.btnPri} onClick={()=>{setProjects(projects.map(p=>p.id===editP?{...p,name:pF.name,anggaran:NM(pF.anggaran)}:p));setEditP(null);setPF({name:"",anggaran:""})}}>Simpan</button><button style={S.btnSec} onClick={()=>{setEditP(null);setPF({name:"",anggaran:""})}}>Batal</button></div>:<button style={S.btnPri} onClick={()=>{if(!pF.name||!pF.anggaran)return;setProjects([...projects,{id:uid(),name:pF.name,anggaran:NM(pF.anggaran),pencairan:[]}]);setPF({name:"",anggaran:""})}}>{I.plus} Tambah</button>}
+        </div>
+      </div>
+
+      {/* Daftar Proyek - Card Style */}
+      <div style={S.card}><div style={S.cardHead}>Daftar Proyek ({projects.length})</div>
+        {!projects.length?<div style={S.empty}>Belum ada proyek</div>:
+        <div style={{display:"flex",flexDirection:"column",gap:8}}>
+          {projects.map(p=>{const cp=cP(p);const pct=p.anggaran>0?(cp.totalCair/p.anggaran)*100:0;return(
+            <div key={p.id} style={{background:T.iBg,borderRadius:10,padding:"14px 16px",border:`1px solid ${T.cb}`,cursor:"pointer"}} onClick={()=>setDetP(p.id)}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                <div>
+                  <div style={{fontWeight:700,fontSize:14,color:T.acL}}>{p.name}</div>
+                  <div style={{fontSize:10,color:T.sub,marginTop:2}}>{p.pencairan.length} tahap pencairan</div>
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:8}} onClick={e=>e.stopPropagation()}>
+                  <KebabMenu items={[{icon:I.edit,label:"Edit",onClick:()=>{setEditP(p.id);setPF({name:p.name,anggaran:p.anggaran.toString()})}},{icon:I.trash,label:"Hapus",danger:true,onClick:()=>{if(confirm(`Hapus proyek "${p.name}"?`))setProjects(projects.filter(x=>x.id!==p.id))}}]}/>
+                </div>
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:8}}>
+                <div><div style={{fontSize:9,color:T.sub}}>Anggaran</div><div style={{fontSize:14,fontWeight:700,color:T.tx}}>{fmtRp(p.anggaran)}</div></div>
+                <div><div style={{fontSize:9,color:T.sub}}>Dicairkan</div><div style={{fontSize:14,fontWeight:700,color:"#ff6b6b"}}>{fmtRp(cp.totalCair)}</div></div>
+                <div><div style={{fontSize:9,color:T.sub}}>Sisa</div><div style={{fontSize:14,fontWeight:700,color:cp.sisaAnggaran>=0?"#00ff88":"#ff6b6b"}}>{fmtRp(cp.sisaAnggaran)}</div></div>
+              </div>
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                <div style={{flex:1,height:4,background:T.mut+"30",borderRadius:2,overflow:"hidden"}}><div style={{height:"100%",borderRadius:2,background:`linear-gradient(90deg,#00ff88,#5b8cff)`,width:`${Math.min(pct,100)}%`,transition:"width 0.4s"}}/></div>
+                <span style={{fontSize:10,fontWeight:700,color:T.acL}}>{pct.toFixed(0)}%</span>
+              </div>
+            </div>
+          )})}
+        </div>}
+      </div>
+    </div>);
+    })()}
 
     {tab==="karyawan"&&(<div>
       <div style={S.grid3}>{[["Total",employees.length,"#1a3c34"],["Aktif",eAkt,"#27ae60"],["Gaji/Bln",fmtRp(tGaji),"#2980b9"]].map(([l,v,c],i)=>(<div key={i} style={{...S.statCard,borderTop:`3px solid ${c}`}}><div style={S.statLbl}>{l}</div><div style={{...S.statVal,color:c,fontSize:typeof v==="string"?15:20}}>{v}</div></div>))}</div>
@@ -528,7 +577,7 @@ function MainApp({account:acc,onLogout,appData,setAppData,onSave}){
       const pgAll=pengajuan||[];
       // Gabungan: proyek biasa (saldo = sisa anggaran) + proyek pengajuan (saldo = debit-kredit)
       const allP=[
-        ...projects.map(p=>{const cp=cP(p);return{id:p.id,name:p.name,saldo:cp.sisaAnggaran,tipe:"proyek"}}),
+        ...projects.map(p=>{const cp=cP(p);return{id:p.id,name:p.name,saldo:cp.totalCair,tipe:"proyek"}}),
         ...pgAll.map(pg=>({id:pg.id,name:pg.name,saldo:pgCalcS(pg.entries),tipe:"pengajuan"}))
       ];
       const dariP=allP.find(x=>x.id===lF.dari);
