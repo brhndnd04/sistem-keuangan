@@ -589,23 +589,31 @@ function MainApp({account:acc,onLogout,appData,setAppData,onSave}){
       const buatPinjaman=()=>{
         if(!lF.dari||!lF.ke||!lF.jumlah||lF.dari===lF.ke)return;
         if(saldoKurang){alert(`Saldo ${dariP.name} tidak cukup! Saldo: ${fmtRp(dariP.saldo)}, Pinjaman: ${fmtRp(jml)}`);return}
-        const now=fmtShort(new Date());
-        // Jika proyek pengajuan → catat di entries
-        if(dariP.tipe==="pengajuan"){const pg=pgAll.find(x=>x.id===lF.dari);if(pg)setPengajuan(pengajuan.map(p=>p.id===lF.dari?{...p,entries:[...(p.entries||[]),{id:uid(),tgl:now,ket:`Pinjam ke ${keP.name}${lF.ket?" — "+lF.ket:""}`,debit:0,kredit:jml,saldoManual:null}]}:p))}
-        if(keP.tipe==="pengajuan"){const pg=pgAll.find(x=>x.id===lF.ke);if(pg)setPengajuan(prev=>prev.map(p=>p.id===lF.ke?{...p,entries:[...(p.entries||[]),{id:uid(),tgl:now,ket:`Pinjam dari ${dariP.name}${lF.ket?" — "+lF.ket:""}`,debit:jml,kredit:0,saldoManual:null}]}:p))}
+        const now=fmtShort(new Date());const ketD=`Pinjam ke ${keP.name}${lF.ket?" — "+lF.ket:""}`;const ketK=`Pinjam dari ${dariP.name}${lF.ket?" — "+lF.ket:""}`;
+        // Catat di proyek pemberi (kredit/keluar)
+        if(dariP.tipe==="pengajuan"){setPengajuan(pengajuan.map(p=>p.id===lF.dari?{...p,entries:[...(p.entries||[]),{id:uid(),tgl:now,ket:ketD,debit:0,kredit:jml,saldoManual:null}]}:p))}
+        if(dariP.tipe==="proyek"){setProjects(projects.map(p=>p.id===lF.dari?{...p,entries:[...(p.entries||[]),{id:uid(),tgl:now,ket:ketD,debit:0,kredit:jml,saldoManual:null}]}:p))}
+        // Catat di proyek penerima (debit/masuk)
+        if(keP.tipe==="pengajuan"){setPengajuan(prev=>prev.map(p=>p.id===lF.ke?{...p,entries:[...(p.entries||[]),{id:uid(),tgl:now,ket:ketK,debit:jml,kredit:0,saldoManual:null}]}:p))}
+        if(keP.tipe==="proyek"){setProjects(prev=>prev.map(p=>p.id===lF.ke?{...p,entries:[...(p.entries||[]),{id:uid(),tgl:now,ket:ketK,debit:jml,kredit:0,saldoManual:null}]}:p))}
         setLoans([...loans,{id:uid(),dariId:lF.dari,keId:lF.ke,dari:dariP.name,ke:keP.name,dariTipe:dariP.tipe,keTipe:keP.tipe,jumlah:jml,ket:lF.ket,tgl:fmtTgl(new Date())}]);
         setLF({dari:"",ke:"",jumlah:"",ket:""});
       };
 
       const kembalikan=(loan)=>{
         const now=fmtShort(new Date());
-        // Cek saldo penerima cukup untuk mengembalikan
         const keCheck=allP.find(x=>x.id===loan.keId||x.name===loan.ke);
         if(keCheck&&loan.jumlah>keCheck.saldo){alert(`Saldo ${keCheck.name} tidak cukup! Saldo: ${fmtRp(keCheck.saldo)}`);return}
         // Catat pengembalian di pengajuan
         setPengajuan(prev=>prev.map(p=>{
-          if((p.id===loan.dariId||p.name===loan.dari)&&(loan.dariTipe==="pengajuan")){return{...p,entries:[...(p.entries||[]),{id:uid(),tgl:now,ket:`Pengembalian dari ${loan.ke}`,debit:loan.jumlah,kredit:0,saldoManual:null}]}}
-          if((p.id===loan.keId||p.name===loan.ke)&&(loan.keTipe==="pengajuan")){return{...p,entries:[...(p.entries||[]),{id:uid(),tgl:now,ket:`Pengembalian ke ${loan.dari}`,debit:0,kredit:loan.jumlah,saldoManual:null}]}}
+          if((p.id===loan.dariId||p.name===loan.dari)&&loan.dariTipe==="pengajuan"){return{...p,entries:[...(p.entries||[]),{id:uid(),tgl:now,ket:`Pengembalian dari ${loan.ke}`,debit:loan.jumlah,kredit:0,saldoManual:null}]}}
+          if((p.id===loan.keId||p.name===loan.ke)&&loan.keTipe==="pengajuan"){return{...p,entries:[...(p.entries||[]),{id:uid(),tgl:now,ket:`Pengembalian ke ${loan.dari}`,debit:0,kredit:loan.jumlah,saldoManual:null}]}}
+          return p;
+        }));
+        // Catat pengembalian di proyek biasa
+        setProjects(prev=>prev.map(p=>{
+          if((p.id===loan.dariId||p.name===loan.dari)&&loan.dariTipe==="proyek"){return{...p,entries:[...(p.entries||[]),{id:uid(),tgl:now,ket:`Pengembalian dari ${loan.ke}`,debit:loan.jumlah,kredit:0,saldoManual:null}]}}
+          if((p.id===loan.keId||p.name===loan.ke)&&loan.keTipe==="proyek"){return{...p,entries:[...(p.entries||[]),{id:uid(),tgl:now,ket:`Pengembalian ke ${loan.dari}`,debit:0,kredit:loan.jumlah,saldoManual:null}]}}
           return p;
         }));
         setLoans(loans.filter(x=>x.id!==loan.id));
