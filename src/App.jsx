@@ -306,101 +306,117 @@ function MainApp({account:acc,onLogout,appData,setAppData,onSave}){
     {tab==="dashboard"&&(()=>{
       const pgCalc=(ent)=>{let rs=0;(ent||[]).forEach(x=>{if(x.saldoManual!=null)rs=x.saldoManual;else rs=rs+(x.debit||0)-(x.kredit||0)});return rs};
       const pgAll=pengajuan||[];const gPD=pgAll.reduce((s,pg)=>(pg.entries||[]).reduce((a,x)=>a+(x.debit||0),0)+s,0);const gPK=pgAll.reduce((s,pg)=>(pg.entries||[]).reduce((a,x)=>a+(x.kredit||0),0)+s,0);const gPS=pgAll.reduce((s,pg)=>s+pgCalc(pg.entries),0);
+      const prCalc=(ent)=>{let rs=0;(ent||[]).forEach(x=>{if(x.saldoManual!=null)rs=x.saldoManual;else rs=rs+(x.debit||0)-(x.kredit||0)});return rs};
+      const gPrD=projects.reduce((s,p)=>(p.entries||[]).reduce((a,x)=>a+(x.debit||0),0)+s,0);
+      const gPrK=projects.reduce((s,p)=>(p.entries||[]).reduce((a,x)=>a+(x.kredit||0),0)+s,0);
+      const gPrS=projects.reduce((s,p)=>s+prCalc(p.entries),0);
       const dTot=tIn+tOut||1;const inPct=(tIn/dTot)*100;const r=38;const circ=2*Math.PI*r;
-      const gl={background:`rgba(${T.id==="light"?"255,255,255,0.7":"30,30,60,0.6"})`,backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",border:`1px solid rgba(${T.id==="light"?"0,0,0,0.08":"255,255,255,0.08"})`,borderRadius:14};
-      const glC={...gl,padding:"16px 18px",position:"relative",overflow:"hidden"};
+      const lt=T.id==="light";
+      const cG=lt?"#27ae60":"#00ff88";const cR=lt?"#e74c3c":"#ff6b6b";const cB=lt?"#2980b9":"#5b8cff";const cT=lt?"#1a1a1a":T.tx;
+      const gl=lt?{background:"#fff",border:"1px solid #e8e8e8",borderRadius:14,boxShadow:"0 2px 8px rgba(0,0,0,0.04)"}:{background:`rgba(30,30,60,0.6)`,backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",border:`1px solid rgba(255,255,255,0.08)`,borderRadius:14};
+      const glC={...gl,padding:"16px 18px",overflow:"hidden"};
       const mths=["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"];const curM=new Date().getMonth();
       const mData=mths.map((_,i)=>{const mIn=tx.filter(t=>t.tipe==="masuk").reduce((s,t)=>{try{if(t.tgl&&t.tgl.includes(mths[i]))return s+t.jumlah;return s}catch(e){return s}},0);const mOut=tx.filter(t=>t.tipe==="keluar").reduce((s,t)=>{try{if(t.tgl&&t.tgl.includes(mths[i]))return s+t.jumlah;return s}catch(e){return s}},0);return{m:mths[i],in:mIn,out:mOut}});
       const maxBar=Math.max(...mData.map(d=>Math.max(d.in,d.out)),1);
-      const nG="#00ff88";const nB="#5b8cff";
       return(<div>
-      <div style={{...glC,display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,background:`linear-gradient(135deg,${T.sA}ee,${T.sB}dd)`,backdropFilter:"blur(16px)"}}>
-        <div><div style={{fontSize:20,fontWeight:800,color:"#fff"}}>{L.selamat}, {acc.nama}</div><div style={{fontSize:11,color:"rgba(255,255,255,0.45)",marginTop:4}}>{L.ringkasan} • {saving?L.menyimpan:""} {I.cloud}</div></div>
-        <div style={{width:50,height:50,borderRadius:"50%",background:`linear-gradient(135deg,${nG},${nB})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,fontWeight:800,color:"#0f0f1a",boxShadow:`0 0 20px ${nG}40`}}>{acc.nama.charAt(0)}</div>
+      {/* Welcome */}
+      <div style={{...glC,display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,background:lt?"linear-gradient(135deg,#f8faf9,#eef5f2)":`linear-gradient(135deg,${T.sA}ee,${T.sB}dd)`}}>
+        <div><div style={{fontSize:20,fontWeight:800,color:lt?"#1a3c34":"#fff"}}>{L.selamat}, {acc.nama}</div><div style={{fontSize:11,color:lt?"#888":"rgba(255,255,255,0.45)",marginTop:4}}>{L.ringkasan} {saving?`• ${L.menyimpan}`:""}</div></div>
+        <div style={{width:44,height:44,borderRadius:"50%",background:lt?"#1a3c34":T.acBg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,fontWeight:800,color:lt?"#fff":T.acL}}>{acc.nama.charAt(0)}</div>
       </div>
+
+      {/* KPI Cards - no icons */}
       <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:16}}>
-        {[[L.tAnggaran,fmtRp(tAng),nG,"📊"],[L.dicairkan,fmtRp(tCair),"#ff6b6b","💸"],[L.sisa,fmtRp(tSisa),nG,"💰"],[L.saldo,fmtRp(saldo),saldo>=0?nG:"#ff6b6b","🏦"]].map(([l,v,c,ic],i)=>(
-          <div key={i} style={{...glC}}><div style={{position:"absolute",top:6,right:8,fontSize:22,opacity:.12}}>{ic}</div><div style={{fontSize:9,fontWeight:600,color:T.sub,textTransform:"uppercase",letterSpacing:.8}}>{l}</div><div style={{fontSize:16,fontWeight:800,color:c,marginTop:8,fontVariantNumeric:"tabular-nums",textShadow:c===nG?`0 0 12px ${nG}30`:"none"}}>{v}</div></div>
+        {[[L.tAnggaran,fmtRp(gPrD),cG],[L.dicairkan,fmtRp(gPrK),cR],[L.sisa,fmtRp(gPrS),gPrS>=0?cG:cR],[L.saldo,fmtRp(saldo),saldo>=0?cG:cR]].map(([l,v,c],i)=>(
+          <div key={i} style={{...glC}}>
+            <div style={{fontSize:9,fontWeight:600,color:lt?"#888":T.sub,textTransform:"uppercase",letterSpacing:.8}}>{l}</div>
+            <div style={{fontSize:17,fontWeight:800,color:c,marginTop:8,fontVariantNumeric:"tabular-nums"}}>{v}</div>
+          </div>
         ))}
       </div>
+
+      {/* Progress */}
       <div style={{...gl,padding:"10px 16px",marginBottom:16,display:"flex",alignItems:"center",gap:12}}>
-        <span style={{fontSize:11,color:T.sub,whiteSpace:"nowrap"}}>{L.sisa}</span>
-        <div style={{flex:1,height:6,background:T.iBg,borderRadius:3,overflow:"hidden"}}><div style={{height:"100%",borderRadius:3,background:`linear-gradient(90deg,${nG},${nB})`,width:`${Math.min(tAng>0?((tAng-tCair)/tAng)*100:0,100)}%`,transition:"width 0.6s",boxShadow:`0 0 8px ${nG}50`}}/></div>
-        <span style={{fontSize:12,fontWeight:800,color:nG,textShadow:`0 0 8px ${nG}40`}}>{tAng>0?((tAng-tCair)/tAng*100).toFixed(0):0}%</span>
+        <span style={{fontSize:11,color:lt?"#888":T.sub,whiteSpace:"nowrap"}}>{L.sisa}</span>
+        <div style={{flex:1,height:6,background:lt?"#eee":T.iBg,borderRadius:3,overflow:"hidden"}}><div style={{height:"100%",borderRadius:3,background:`linear-gradient(90deg,${cG},${cB})`,width:`${Math.min(gPrD>0?((gPrD-gPrK)/gPrD)*100:0,100)}%`,transition:"width 0.6s"}}/></div>
+        <span style={{fontSize:12,fontWeight:800,color:cG}}>{gPrD>0?((gPrD-gPrK)/gPrD*100).toFixed(0):0}%</span>
       </div>
-      <div style={{...glC,marginBottom:16}}><div style={{fontSize:12,fontWeight:700,color:T.tx,marginBottom:12}}>Status Pencairan</div>
+
+      {/* Status Pencairan */}
+      <div style={{...glC,marginBottom:16}}><div style={{fontSize:12,fontWeight:700,color:cT,marginBottom:12}}>Status Pencairan</div>
         <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8}}>
-          {STATUS_LIST.map((st,idx)=>{const sc=stC(st);const cnt=pcC(st);const amt=pcS(st);const icons=["📋","⏳","✅","🎉"];return(
-            <div key={st} style={{textAlign:"center",padding:"14px 6px",borderRadius:12,background:sc.bg,position:"relative",border:`1px solid ${sc.fg}20`}}>
-              <div style={{fontSize:26,marginBottom:4}}>{icons[idx]}</div>
-              <div style={{fontSize:8,fontWeight:700,color:sc.fg,textTransform:"uppercase",letterSpacing:.5}}>{st}</div>
-              <div style={{fontSize:22,fontWeight:800,color:sc.fg,margin:"4px 0"}}>{cnt}</div>
-              <div style={{fontSize:10,fontWeight:600,color:sc.fg,opacity:.75}}>{fmtRp(amt)}</div>
-              {idx<3&&<div style={{position:"absolute",right:-7,top:"50%",transform:"translateY(-50%)",fontSize:16,color:T.mut,zIndex:2}}>›</div>}
+          {STATUS_LIST.map((st,idx)=>{const sc=stC(st);const cnt=pcC(st);const amt=pcS(st);return(
+            <div key={st} style={{textAlign:"center",padding:"14px 8px",borderRadius:12,background:sc.bg,position:"relative",border:`1px solid ${sc.fg}20`}}>
+              <div style={{fontSize:9,fontWeight:700,color:sc.fg,textTransform:"uppercase",letterSpacing:.5,marginBottom:4}}>{st}</div>
+              <div style={{fontSize:24,fontWeight:800,color:sc.fg}}>{cnt}</div>
+              <div style={{fontSize:10,fontWeight:600,color:sc.fg,opacity:.75,marginTop:2}}>{fmtRp(amt)}</div>
+              {idx<3&&<div style={{position:"absolute",right:-7,top:"50%",transform:"translateY(-50%)",fontSize:14,color:lt?"#ccc":T.mut}}>›</div>}
             </div>
           )})}
         </div>
       </div>
+
+      {/* Operasional + Transaksi */}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
         <div style={{...glC}}>
-          <div style={{fontSize:12,fontWeight:700,color:T.tx,marginBottom:12}}>Ringkasan Operasional</div>
-          <div style={{display:"flex",alignItems:"center",gap:14}}>
-            <div style={{width:52,height:52,borderRadius:14,background:`linear-gradient(135deg,${nG}20,${nB}20)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,border:`1px solid ${nG}30`}}>👥</div>
-            <div><div style={{fontSize:11,color:T.sub}}>Karyawan: <b style={{color:nG}}>{eAkt}</b> {L.aktif}</div><div style={{fontSize:20,fontWeight:800,color:T.acL,marginTop:2}}>{fmtRp(tGaji)}</div><div style={{fontSize:9,color:T.mut,marginTop:1}}>{L.gajiBulan}</div></div>
-          </div>
+          <div style={{fontSize:12,fontWeight:700,color:cT,marginBottom:12}}>Ringkasan Operasional</div>
+          <div><div style={{fontSize:11,color:lt?"#666":T.sub}}>Karyawan: <b style={{color:cG}}>{eAkt}</b> {L.aktif}</div><div style={{fontSize:22,fontWeight:800,color:lt?"#1a3c34":T.acL,marginTop:4}}>{tGaji<0?"− ":""}{fmtRp(Math.abs(tGaji))}</div><div style={{fontSize:9,color:lt?"#999":T.mut,marginTop:2}}>{L.gajiBulan}</div></div>
         </div>
         <div style={{...glC}}>
-          <div style={{fontSize:12,fontWeight:700,color:T.tx,marginBottom:12}}>{L.transaksi}</div>
+          <div style={{fontSize:12,fontWeight:700,color:cT,marginBottom:12}}>{L.transaksi}</div>
           <div style={{display:"flex",alignItems:"center",gap:16}}>
             <div style={{position:"relative",width:70,height:70}}>
-              <svg width="70" height="70" viewBox="0 0 90 90"><circle cx="45" cy="45" r={r} fill="none" stroke={T.iBg} strokeWidth="8"/>{tIn>0&&<circle cx="45" cy="45" r={r} fill="none" stroke={nG} strokeWidth="8" strokeDasharray={`${(inPct/100)*circ} ${circ}`} strokeDashoffset="0" transform="rotate(-90 45 45)" strokeLinecap="round" style={{filter:`drop-shadow(0 0 4px ${nG}60)`}}/>}{tOut>0&&<circle cx="45" cy="45" r={r} fill="none" stroke="#ff6b6b" strokeWidth="8" strokeDasharray={`${((100-inPct)/100)*circ} ${circ}`} strokeDashoffset={`${-(inPct/100)*circ}`} transform="rotate(-90 45 45)" strokeLinecap="round"/>}</svg>
-              <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",fontSize:9,fontWeight:800,color:T.tx}}>{tIn+tOut>0?`${inPct.toFixed(0)}%`:"-"}</div>
+              <svg width="70" height="70" viewBox="0 0 90 90"><circle cx="45" cy="45" r={r} fill="none" stroke={lt?"#eee":T.iBg} strokeWidth="8"/>{tIn>0&&<circle cx="45" cy="45" r={r} fill="none" stroke={cG} strokeWidth="8" strokeDasharray={`${(inPct/100)*circ} ${circ}`} strokeDashoffset="0" transform="rotate(-90 45 45)" strokeLinecap="round"/>}{tOut>0&&<circle cx="45" cy="45" r={r} fill="none" stroke={cR} strokeWidth="8" strokeDasharray={`${((100-inPct)/100)*circ} ${circ}`} strokeDashoffset={`${-(inPct/100)*circ}`} transform="rotate(-90 45 45)" strokeLinecap="round"/>}</svg>
+              <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",fontSize:10,fontWeight:800,color:cT}}>{tIn+tOut>0?`${inPct.toFixed(0)}%`:"-"}</div>
             </div>
             <div style={{flex:1}}>
-              <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}><div style={{width:10,height:10,borderRadius:"50%",background:nG,boxShadow:`0 0 6px ${nG}`}}/><span style={{fontSize:11,color:T.sub,flex:1}}>Masuk</span><span style={{fontWeight:700,color:nG,fontSize:12}}>{fmtRp(tIn)}</span></div>
-              <div style={{display:"flex",alignItems:"center",gap:6}}><div style={{width:10,height:10,borderRadius:"50%",background:"#ff6b6b",boxShadow:"0 0 6px #ff6b6b"}}/><span style={{fontSize:11,color:T.sub,flex:1}}>Keluar</span><span style={{fontWeight:700,color:"#ff6b6b",fontSize:12}}>{fmtRp(tOut)}</span></div>
+              <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}><div style={{width:10,height:10,borderRadius:"50%",background:cG}}/><span style={{fontSize:11,color:lt?"#666":T.sub,flex:1}}>Masuk</span><span style={{fontWeight:700,color:cG,fontSize:12}}>{fmtRp(tIn)}</span></div>
+              <div style={{display:"flex",alignItems:"center",gap:6}}><div style={{width:10,height:10,borderRadius:"50%",background:cR}}/><span style={{fontSize:11,color:lt?"#666":T.sub,flex:1}}>Keluar</span><span style={{fontWeight:700,color:cR,fontSize:12}}>{fmtRp(tOut)}</span></div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Trend */}
       <div style={{...glC,marginBottom:16}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-          <div style={{fontSize:12,fontWeight:700,color:T.tx}}>Ringkasan Tren</div>
-          <div style={{display:"flex",gap:12,fontSize:10}}><span style={{display:"flex",alignItems:"center",gap:4}}><span style={{width:8,height:8,borderRadius:2,background:nG}}/><span style={{color:T.sub}}>Masuk</span></span><span style={{display:"flex",alignItems:"center",gap:4}}><span style={{width:8,height:8,borderRadius:2,background:"#ff6b6b"}}/><span style={{color:T.sub}}>Keluar</span></span></div>
+          <div style={{fontSize:12,fontWeight:700,color:cT}}>Ringkasan Tren</div>
+          <div style={{display:"flex",gap:12,fontSize:10}}><span style={{display:"flex",alignItems:"center",gap:4}}><span style={{width:8,height:8,borderRadius:2,background:cG}}/><span style={{color:lt?"#888":T.sub}}>Masuk</span></span><span style={{display:"flex",alignItems:"center",gap:4}}><span style={{width:8,height:8,borderRadius:2,background:cR}}/><span style={{color:lt?"#888":T.sub}}>Keluar</span></span></div>
         </div>
         <div style={{display:"flex",alignItems:"flex-end",gap:4,height:100}}>
           {mData.slice(0,curM+1).map((d,i)=>{const hIn=maxBar>0?(d.in/maxBar)*80:0;const hOut=maxBar>0?(d.out/maxBar)*80:0;return(
             <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
               <div style={{display:"flex",gap:2,alignItems:"flex-end",height:80}}>
-                <div style={{width:8,borderRadius:"3px 3px 0 0",background:hIn>0?nG:T.iBg,height:Math.max(hIn,2),boxShadow:hIn>0?`0 0 6px ${nG}40`:"none",transition:"height 0.3s"}}/>
-                <div style={{width:8,borderRadius:"3px 3px 0 0",background:hOut>0?"#ff6b6b":T.iBg,height:Math.max(hOut,2),transition:"height 0.3s"}}/>
+                <div style={{width:8,borderRadius:"3px 3px 0 0",background:hIn>0?cG:(lt?"#eee":T.iBg),height:Math.max(hIn,2),transition:"height 0.3s"}}/>
+                <div style={{width:8,borderRadius:"3px 3px 0 0",background:hOut>0?cR:(lt?"#eee":T.iBg),height:Math.max(hOut,2),transition:"height 0.3s"}}/>
               </div>
-              <span style={{fontSize:8,color:T.mut}}>{d.m}</span>
+              <span style={{fontSize:8,color:lt?"#aaa":T.mut}}>{d.m}</span>
             </div>
           )})}
         </div>
       </div>
+
+      {/* Bottom: Pengajuan + Proyek */}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
         <div style={{...glC}}>
-          <div style={{fontSize:12,fontWeight:700,color:T.tx,marginBottom:12}}>{L.pengajuan}</div>
+          <div style={{fontSize:12,fontWeight:700,color:cT,marginBottom:12}}>{L.pengajuan}</div>
           {!pgAll.length?<div style={S.empty}>Belum ada</div>:<>
             <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:6,marginBottom:10}}>
-              {[["Debit",fmtRp(gPD),nB],["Kredit",fmtRp(gPK),"#ff6b6b"],[L.saldo,fmtRp(gPS),gPS>=0?nG:"#ff6b6b"]].map(([l,v,c],i)=>(<div key={i} style={{background:`${c}12`,borderRadius:8,padding:"8px 6px",textAlign:"center",border:`1px solid ${c}20`}}><div style={{fontSize:8,fontWeight:700,color:c}}>{l}</div><div style={{fontSize:12,fontWeight:800,color:c}}>{v}</div></div>))}</div>
+              {[["Debit",fmtRp(gPD),cB],["Kredit",fmtRp(gPK),cR],[L.saldo,fmtRp(gPS),gPS>=0?cG:cR]].map(([l,v,c],i)=>(<div key={i} style={{background:lt?`${c}10`:`${c}12`,borderRadius:8,padding:"8px 6px",textAlign:"center"}}><div style={{fontSize:8,fontWeight:700,color:c}}>{l}</div><div style={{fontSize:12,fontWeight:800,color:c}}>{v}</div></div>))}</div>
             <div style={S.tableWrap}><table style={{...S.table,fontSize:10}}><thead><tr><th style={{...S.th,textAlign:"left",fontSize:8}}>Nama Proyek</th><th style={{...S.th,fontSize:8}}>Debit</th><th style={{...S.th,fontSize:8}}>Kredit</th><th style={{...S.th,fontSize:8}}>{L.saldo}</th></tr></thead><tbody>
-              {pgAll.map((pg,i)=>{const ps=pgCalc(pg.entries);return(<tr key={pg.id} style={i%2?{background:`${T.ac}08`}:{}}><td style={{...S.td,textAlign:"left",fontWeight:600,fontSize:11}}>{pg.name}</td><td style={{...S.td,color:nB}}>{fmtRp((pg.entries||[]).reduce((a,x)=>a+(x.debit||0),0))}</td><td style={{...S.td,color:"#ff6b6b"}}>{fmtRp((pg.entries||[]).reduce((a,x)=>a+(x.kredit||0),0))}</td><td style={{...S.td,fontWeight:700,color:ps>=0?nG:"#ff6b6b"}}>{fmtRp(ps)}</td></tr>)})}
+              {pgAll.map((pg,i)=>{const ps=pgCalc(pg.entries);return(<tr key={pg.id} style={i%2?{background:lt?"#f9f9f9":`${T.ac}08`}:{}}><td style={{...S.td,textAlign:"left",fontWeight:600,fontSize:11}}>{pg.name}</td><td style={{...S.td,color:cB}}>{fmtRp((pg.entries||[]).reduce((a,x)=>a+(x.debit||0),0))}</td><td style={{...S.td,color:cR}}>{fmtRp((pg.entries||[]).reduce((a,x)=>a+(x.kredit||0),0))}</td><td style={{...S.td,fontWeight:700,color:ps>=0?cG:cR}}>{fmtRp(ps)}</td></tr>)})}
             </tbody></table></div></>}
         </div>
         <div style={{...glC}}>
-          <div style={{fontSize:12,fontWeight:700,color:T.tx,marginBottom:12}}>Daftar {L.proyek}</div>
+          <div style={{fontSize:12,fontWeight:700,color:cT,marginBottom:12}}>Daftar {L.proyek}</div>
           {!projects.length?<div style={S.empty}>Belum ada</div>:
-          <div style={S.tableWrap}><table style={{...S.table,fontSize:10}}><thead><tr><th style={{...S.th,textAlign:"left",fontSize:8}}>{L.proyek}</th><th style={{...S.th,fontSize:8}}>Anggaran</th><th style={{...S.th,fontSize:8}}>Cair</th></tr></thead><tbody>
-            {projects.map((p,i)=>{const cp=cP(p);return(<tr key={p.id} style={i%2?{background:`${T.ac}08`}:{}}><td style={{...S.td,textAlign:"left",fontWeight:600,fontSize:11,cursor:"pointer",color:T.acL}} onClick={()=>{setDetP(p.id);setTab("proyek")}}>{p.name}</td><td style={S.td}>{fmtRp(p.anggaran)}</td><td style={{...S.td,color:"#ff6b6b"}}>{fmtRp(cp.totalCair)}</td></tr>)})}
+          <div style={S.tableWrap}><table style={{...S.table,fontSize:10}}><thead><tr><th style={{...S.th,textAlign:"left",fontSize:8}}>{L.proyek}</th><th style={{...S.th,fontSize:8}}>Debit</th><th style={{...S.th,fontSize:8}}>Cair</th></tr></thead><tbody>
+            {projects.map((p,i)=>{const pD=(p.entries||[]).reduce((a,x)=>a+(x.debit||0),0);const pK=(p.entries||[]).reduce((a,x)=>a+(x.kredit||0),0);return(<tr key={p.id} style={i%2?{background:lt?"#f9f9f9":`${T.ac}08`}:{}}><td style={{...S.td,textAlign:"left",fontWeight:600,fontSize:11,cursor:"pointer",color:lt?"#1a3c34":T.acL}} onClick={()=>{setDetP(p.id);setTab("proyek")}}>{p.name}</td><td style={{...S.td,color:cB}}>{fmtRp(pD)}</td><td style={{...S.td,color:cR}}>{fmtRp(pK)}</td></tr>)})}
           </tbody></table></div>}
         </div>
       </div>
     </div>);
     })()}
-
     {tab==="proyek"&&(()=>{
       const prCalc=(ent)=>{let rs=0;(ent||[]).forEach(x=>{if(x.saldoManual!=null)rs=x.saldoManual;else rs=rs+(x.debit||0)-(x.kredit||0)});return rs};
       const gD=projects.reduce((s,p)=>(p.entries||[]).reduce((a,x)=>a+(x.debit||0),0)+s,0);
