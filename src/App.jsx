@@ -376,23 +376,23 @@ function MainApp({account:acc,onLogout,appData,setAppData,onSave}){
         </div>
       </div>
 
-      {/* Bottom: Pengajuan + Proyek */}
+      {/* Saldo Pengajuan + Pinjaman */}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-        <div style={{...glC}}>
-          <div style={{fontSize:12,fontWeight:700,color:cT,marginBottom:12}}>{L.pengajuan}</div>
-          {!pgAll.length?<div style={S.empty}>Belum ada</div>:<>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:6,marginBottom:10}}>
-              {[["Debit",fmtRp(gPD),cB],["Kredit",fmtRp(gPK),cR],[L.saldo,fmtRp(gPS),gPS>=0?cG:cR]].map(([l,v,c],i)=>(<div key={i} style={{background:lt?`${c}10`:`${c}12`,borderRadius:8,padding:"8px 6px",textAlign:"center"}}><div style={{fontSize:8,fontWeight:700,color:c}}>{l}</div><div style={{fontSize:12,fontWeight:800,color:c}}>{v}</div></div>))}</div>
-            <div style={S.tableWrap}><table style={{...S.table,fontSize:10}}><thead><tr><th style={{...S.th,textAlign:"left",fontSize:8}}>Nama Proyek</th><th style={{...S.th,fontSize:8}}>Debit</th><th style={{...S.th,fontSize:8}}>Kredit</th><th style={{...S.th,fontSize:8}}>{L.saldo}</th></tr></thead><tbody>
-              {pgAll.map((pg,i)=>{const ps=pgCalc(pg.entries);return(<tr key={pg.id} style={i%2?{background:lt?"#f9f9f9":`${T.ac}08`}:{}}><td style={{...S.td,textAlign:"left",fontWeight:600,fontSize:11}}>{pg.name}</td><td style={{...S.td,color:cB}}>{fmtRp((pg.entries||[]).reduce((a,x)=>a+(x.debit||0),0))}</td><td style={{...S.td,color:cR}}>{fmtRp((pg.entries||[]).reduce((a,x)=>a+(x.kredit||0),0))}</td><td style={{...S.td,fontWeight:700,color:ps>=0?cG:cR}}>{fmtRp(ps)}</td></tr>)})}
-            </tbody></table></div></>}
+        <div style={{...glC,textAlign:"center",padding:"24px 20px"}}>
+          <div style={{fontSize:11,fontWeight:600,color:lt?"#888":T.sub,textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Saldo Proyek Pengajuan</div>
+          <div style={{fontSize:28,fontWeight:800,color:gPS>=0?cG:cR,fontVariantNumeric:"tabular-nums"}}>{fmtRp(gPS)}</div>
+          <div style={{display:"flex",justifyContent:"center",gap:20,marginTop:12}}>
+            <div><div style={{fontSize:9,color:lt?"#888":T.sub}}>Total Debit</div><div style={{fontSize:13,fontWeight:700,color:cB}}>{fmtRp(gPD)}</div></div>
+            <div style={{width:1,background:lt?"#e0e0e0":T.cb}}/>
+            <div><div style={{fontSize:9,color:lt?"#888":T.sub}}>Total Kredit</div><div style={{fontSize:13,fontWeight:700,color:cR}}>{fmtRp(gPK)}</div></div>
+          </div>
         </div>
-        <div style={{...glC}}>
-          <div style={{fontSize:12,fontWeight:700,color:cT,marginBottom:12}}>Daftar {L.proyek}</div>
-          {!projects.length?<div style={S.empty}>Belum ada</div>:
-          <div style={S.tableWrap}><table style={{...S.table,fontSize:10}}><thead><tr><th style={{...S.th,textAlign:"left",fontSize:8}}>{L.proyek}</th><th style={{...S.th,fontSize:8}}>Debit</th><th style={{...S.th,fontSize:8}}>Cair</th></tr></thead><tbody>
-            {projects.map((p,i)=>{const pD=(p.entries||[]).reduce((a,x)=>a+(x.debit||0),0);const pK=(p.entries||[]).reduce((a,x)=>a+(x.kredit||0),0);return(<tr key={p.id} style={i%2?{background:lt?"#f9f9f9":`${T.ac}08`}:{}}><td style={{...S.td,textAlign:"left",fontWeight:600,fontSize:11,cursor:"pointer",color:lt?"#1a3c34":T.acL}} onClick={()=>{setDetP(p.id);setTab("proyek")}}>{p.name}</td><td style={{...S.td,color:cB}}>{fmtRp(pD)}</td><td style={{...S.td,color:cR}}>{fmtRp(pK)}</td></tr>)})}
-          </tbody></table></div>}
+        <div style={{...glC,textAlign:"center",padding:"24px 20px"}}>
+          <div style={{fontSize:11,fontWeight:600,color:lt?"#888":T.sub,textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Pinjaman Aktif</div>
+          <div style={{fontSize:28,fontWeight:800,color:loans.length?cR:cG,fontVariantNumeric:"tabular-nums"}}>{fmtRp(loans.reduce((s,l)=>s+l.jumlah,0))}</div>
+          <div style={{display:"flex",justifyContent:"center",gap:20,marginTop:12}}>
+            <div><div style={{fontSize:9,color:lt?"#888":T.sub}}>Jumlah Pinjaman</div><div style={{fontSize:13,fontWeight:700,color:lt?"#333":T.tx}}>{loans.length}</div></div>
+          </div>
         </div>
       </div>
     </div>);
