@@ -325,34 +325,14 @@ function MainApp({account:acc,onLogout,appData,setAppData,onSave}){
         <div style={{width:44,height:44,borderRadius:"50%",background:lt?"#1a3c34":T.acBg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,fontWeight:800,color:lt?"#fff":T.acL}}>{acc.nama.charAt(0)}</div>
       </div>
 
-      {/* KPI Cards - no icons */}
-      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:16}}>
-        {[[L.tAnggaran,fmtRp(gPrD),cG],[L.dicairkan,fmtRp(gPrK),cR],[L.sisa,fmtRp(gPrS),gPrS>=0?cG:cR],[L.saldo,fmtRp(saldo),saldo>=0?cG:cR]].map(([l,v,c],i)=>(
-          <div key={i} style={{...glC}}>
-            <div style={{fontSize:9,fontWeight:600,color:lt?"#888":T.sub,textTransform:"uppercase",letterSpacing:.8}}>{l}</div>
-            <div style={{fontSize:17,fontWeight:800,color:c,marginTop:8,fontVariantNumeric:"tabular-nums"}}>{v}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Progress */}
-      <div style={{...gl,padding:"10px 16px",marginBottom:16,display:"flex",alignItems:"center",gap:12}}>
-        <span style={{fontSize:11,color:lt?"#888":T.sub,whiteSpace:"nowrap"}}>{L.sisa}</span>
-        <div style={{flex:1,height:6,background:lt?"#eee":T.iBg,borderRadius:3,overflow:"hidden"}}><div style={{height:"100%",borderRadius:3,background:`linear-gradient(90deg,${cG},${cB})`,width:`${Math.min(gPrD>0?((gPrD-gPrK)/gPrD)*100:0,100)}%`,transition:"width 0.6s"}}/></div>
-        <span style={{fontSize:12,fontWeight:800,color:cG}}>{gPrD>0?((gPrD-gPrK)/gPrD*100).toFixed(0):0}%</span>
-      </div>
-
-      {/* Status Pencairan */}
-      <div style={{...glC,marginBottom:16}}><div style={{fontSize:12,fontWeight:700,color:cT,marginBottom:12}}>Status Pencairan</div>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8}}>
-          {STATUS_LIST.map((st,idx)=>{const sc=stC(st);const cnt=pcC(st);const amt=pcS(st);return(
-            <div key={st} style={{textAlign:"center",padding:"14px 8px",borderRadius:12,background:sc.bg,position:"relative",border:`1px solid ${sc.fg}20`}}>
-              <div style={{fontSize:9,fontWeight:700,color:sc.fg,textTransform:"uppercase",letterSpacing:.5,marginBottom:4}}>{st}</div>
-              <div style={{fontSize:24,fontWeight:800,color:sc.fg}}>{cnt}</div>
-              <div style={{fontSize:10,fontWeight:600,color:sc.fg,opacity:.75,marginTop:2}}>{fmtRp(amt)}</div>
-              {idx<3&&<div style={{position:"absolute",right:-7,top:"50%",transform:"translateY(-50%)",fontSize:14,color:lt?"#ccc":T.mut}}>›</div>}
-            </div>
-          )})}
+      {/* Saldo Proyek DRT */}
+      <div style={{...glC,marginBottom:16,textAlign:"center",padding:"24px 20px"}}>
+        <div style={{fontSize:11,fontWeight:600,color:lt?"#888":T.sub,textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Saldo Proyek DRT</div>
+        <div style={{fontSize:32,fontWeight:800,color:gPrS>=0?cG:cR,fontVariantNumeric:"tabular-nums"}}>{fmtRp(gPrS)}</div>
+        <div style={{display:"flex",justifyContent:"center",gap:24,marginTop:12}}>
+          <div><div style={{fontSize:9,color:lt?"#888":T.sub}}>Total Debit</div><div style={{fontSize:14,fontWeight:700,color:cB}}>{fmtRp(gPrD)}</div></div>
+          <div style={{width:1,background:lt?"#e0e0e0":T.cb}}/> 
+          <div><div style={{fontSize:9,color:lt?"#888":T.sub}}>Total Kredit</div><div style={{fontSize:14,fontWeight:700,color:cR}}>{fmtRp(gPrK)}</div></div>
         </div>
       </div>
 
