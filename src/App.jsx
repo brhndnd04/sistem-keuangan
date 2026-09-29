@@ -70,7 +70,7 @@ const LANG={
 const mkCSS=(t)=>`@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');*{box-sizing:border-box;margin:0;padding:0}input,select,button{font-family:inherit}input:focus,select:focus{outline:none;border-color:${t.ac}!important;box-shadow:0 0 0 3px ${t.acBg}}button:active{transform:scale(0.97)}::-webkit-scrollbar{width:5px}::-webkit-scrollbar-thumb{background:${t.mut};border-radius:8px}::-webkit-scrollbar-track{background:${t.card}}body{background:${t.bg}}`;
 
 // ── PDF Slip ──
-function printSlip(emp,s){const c=calcSlip(s);const sB=emp.saldo||0;const harusBayar=c.gajiBersih+sB;const dibayar=s.dibayarkan||0;const saldoBaru=harusBayar-dibayar;const sK=Math.max(0,(emp.kasbon||0)-s.potKasbon);const now=new Date();
+function printSlip(emp,s,recOverride){const c=calcSlip(s);const sB=recOverride?recOverride.saldoSblm:(emp.saldo||0);const harusBayar=recOverride?recOverride.harusBayar:(c.gajiBersih+sB);const dibayar=recOverride?recOverride.dibayarkan:(s.dibayarkan||0);const saldoBaru=harusBayar-dibayar;const sK=Math.max(0,(emp.kasbon||0)-s.potKasbon);const now=new Date();
 const slip=`<div class="slip">
 <div class="hdr"><div class="logo"><img src="${LOGO_IMG}" style="height:22px"/></div><div><div class="ttl">SLIP GAJI KARYAWAN</div><div class="sub">Dept. Rumah Tangga · ${s.periode}</div></div><div class="tgl">${fmtShort(now)}</div></div>
 <div class="info"><div class="col"><b>${emp.nama}</b> · ${emp.jabatan} · ${emp.dep}</div><div class="col r">Kasbon: ${fmtRp(emp.kasbon||0)} · Saldo: ${sB>=0?'+':''}${fmtRp(sB)}</div></div>
@@ -100,36 +100,33 @@ const html=`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Slip-${emp.n
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Plus Jakarta Sans',sans-serif;color:#1a1a1a;font-size:9px;line-height:1.4}
-@page{size:215mm 330mm;margin:6mm 8mm}
-.page{width:100%;display:flex;flex-direction:column;height:318mm}
-.slip{flex:1;padding:6mm 4mm;border-bottom:1.5px dashed #999;position:relative;display:flex;flex-direction:column}
-.slip:last-child{border-bottom:none}
-.slip::after{content:'✂';position:absolute;bottom:-3px;left:4mm;font-size:10px;color:#999}
-.slip:last-child::after{display:none}
-.hdr{display:flex;align-items:center;gap:6px;padding-bottom:4px;border-bottom:2px solid #1a3c34;margin-bottom:4px}
-.hdr .ttl{font-size:11px;font-weight:700;color:#1a3c34}
-.hdr .sub{font-size:8px;color:#888}
-.hdr .tgl{margin-left:auto;font-size:8px;color:#888}
-.info{display:flex;justify-content:space-between;padding:3px 0;font-size:8.5px;border-bottom:1px solid #eee;margin-bottom:3px}
+body{font-family:'Plus Jakarta Sans',sans-serif;color:#1a1a1a;font-size:10px;line-height:1.5}
+@page{size:A5;margin:8mm 10mm}
+.page{width:100%}
+.slip{padding:4mm 2mm;display:flex;flex-direction:column;min-height:calc(148mm - 16mm)}
+.hdr{display:flex;align-items:center;gap:8px;padding-bottom:6px;border-bottom:2px solid #1a3c34;margin-bottom:6px}
+.hdr .ttl{font-size:13px;font-weight:700;color:#1a3c34}
+.hdr .sub{font-size:9px;color:#888}
+.hdr .tgl{margin-left:auto;font-size:9px;color:#888}
+.info{display:flex;justify-content:space-between;padding:4px 0;font-size:9.5px;border-bottom:1px solid #eee;margin-bottom:5px}
 .info .r{text-align:right}
-.body{display:grid;grid-template-columns:1fr 1fr 1.2fr;gap:4px;flex:1}
-.sec{font-size:8.5px}
-.stl{font-size:8px;font-weight:700;color:#1a3c34;border-bottom:1.5px solid #ddd;padding-bottom:1px;margin-bottom:2px}
+.body{display:grid;grid-template-columns:1fr 1fr 1.2fr;gap:6px;flex:1}
+.sec{font-size:9.5px}
+.stl{font-size:9px;font-weight:700;color:#1a3c34;border-bottom:1.5px solid #ddd;padding-bottom:2px;margin-bottom:3px}
 .stl.red{color:#c0392b}
-.rw{display:flex;justify-content:space-between;padding:1.5px 0;font-size:8.5px}
+.rw{display:flex;justify-content:space-between;padding:2px 0;font-size:9.5px}
 .rw span:last-child{font-weight:600;white-space:nowrap}
-.rw.tot{border-top:1px solid #ddd;font-weight:700;margin-top:2px;padding-top:2px}
+.rw.tot{border-top:1px solid #ddd;font-weight:700;margin-top:3px;padding-top:3px}
 .rw.grn{color:#1a7a3a}.rw.red{color:#c0392b}
-.rw.grand{background:#1a3c34;color:#fff;border-radius:3px;padding:3px 5px;font-weight:700;font-size:9.5px;margin-top:3px}
-.rw.saldo{background:#f0f0f0;border-radius:3px;padding:2px 5px;font-weight:700;font-size:8.5px;margin-top:2px}
-.sign{display:flex;justify-content:space-between;padding-top:4px;margin-top:auto}
-.sb{text-align:center;font-size:8px;color:#666}
-.ln{margin-top:24px;border-bottom:1px solid #333;width:100px;display:inline-block}
-.nm{font-size:8.5px;font-weight:600;color:#1a1a1a;margin-top:2px}
+.rw.grand{background:#1a3c34;color:#fff;border-radius:4px;padding:4px 6px;font-weight:700;font-size:11px;margin-top:4px}
+.rw.saldo{background:#f0f0f0;border-radius:4px;padding:3px 6px;font-weight:700;font-size:9.5px;margin-top:3px}
+.sign{display:flex;justify-content:space-between;padding-top:8px;margin-top:auto}
+.sb{text-align:center;font-size:9px;color:#666}
+.ln{margin-top:28px;border-bottom:1px solid #333;width:110px;display:inline-block}
+.nm{font-size:9.5px;font-weight:600;color:#1a1a1a;margin-top:2px}
 @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 </style></head><body>
-<div class="page">${slip}${slip}${slip}</div>
+<div class="page">${slip}</div>
 <script>window.onload=function(){window.print()}<\/script></body></html>`;
 const w=window.open("","_blank");if(w){w.document.write(html);w.document.close();}}
 
@@ -226,7 +223,7 @@ function SlipDetail({emp,onBack,onUpdate,S,T}){
       const saveEdit=()=>{const gb=NM(rwF.gajiBersih);const ss=NM(rwF.saldoSblm);const db=NM(rwF.dibayarkan);const hb=gb+ss;const sa=hb-db;const nr=rw.map((r,i)=>i===editRw?{...r,periode:rwF.periode,gajiBersih:gb,saldoSblm:ss,harusBayar:hb,dibayarkan:db,saldoAkhir:sa}:r);onUpdate({...emp,riwayat:nr});setEditRw(null)};
       return(<div style={S.card}><div style={S.cardHead}>Riwayat Gaji</div>{!rw.length?<div style={S.empty}>Belum ada. Klik "Tutup Periode" untuk simpan.</div>:<div style={S.tableWrap}><table style={S.table}><thead><tr><th style={{...S.th,textAlign:"left"}}>Periode</th><th style={S.th}>Gaji Bersih</th><th style={S.th}>Saldo Sblm</th><th style={S.th}>Harus Bayar</th><th style={{...S.th,fontWeight:700}}>Dibayarkan</th><th style={S.th}>Saldo Akhir</th><th style={S.th}>Aksi</th></tr></thead><tbody>{rw.map((r,i)=>{const hb=r.harusBayar||(r.gajiBersih+(r.saldoSblm||0));const db=r.dibayarkan||r.totalDiterima||0;
       if(editRw===i){const ehb=NM(rwF.gajiBersih)+NM(rwF.saldoSblm);const esa=ehb-NM(rwF.dibayarkan);return(<tr key={i} style={{background:`${T.ac}10`}}><td style={{...S.td,textAlign:"left"}}><input style={{...S.input,width:110,padding:"4px 6px",fontSize:11}} value={rwF.periode} onChange={e=>setRwF({...rwF,periode:e.target.value})}/></td><td style={S.td}><input style={{...S.input,width:85,padding:"4px 6px",fontSize:11,textAlign:"right"}} type="number" value={rwF.gajiBersih} onChange={e=>setRwF({...rwF,gajiBersih:e.target.value})}/></td><td style={S.td}><input style={{...S.input,width:85,padding:"4px 6px",fontSize:11,textAlign:"right"}} type="number" value={rwF.saldoSblm} onChange={e=>setRwF({...rwF,saldoSblm:e.target.value})}/></td><td style={{...S.td,fontWeight:600}}>{fmtRp(ehb)}</td><td style={S.td}><input style={{...S.input,width:85,padding:"4px 6px",fontSize:11,textAlign:"right"}} type="number" value={rwF.dibayarkan} onChange={e=>setRwF({...rwF,dibayarkan:e.target.value})}/></td><td style={{...S.td,fontWeight:700,color:esa>=0?"#27ae60":"#c0392b"}}>{esa>=0?"+":""}{fmtRp(esa)}</td><td style={S.td}><div style={{display:"flex",gap:3,justifyContent:"center"}}><button style={{...S.btnMini,borderColor:"#27ae60",color:"#27ae60",padding:"3px 8px"}} onClick={saveEdit}>{I.save}</button><button style={{...S.btnMini,borderColor:T.sub,color:T.sub,padding:"3px 8px"}} onClick={()=>setEditRw(null)}>{I.x}</button></div></td></tr>)}
-      return(<tr key={i} style={i%2?{background:"rgba(255,255,255,0.03)"}:{}}><td style={{...S.td,textAlign:"left"}}><div style={{fontWeight:600}}>{r.periode}</div><div style={{fontSize:10,color:"#666"}}>{r.tgl}</div></td><td style={{...S.td,fontWeight:600}}>{fmtRp(r.gajiBersih)}</td><td style={{...S.td,color:(r.saldoSblm||0)>=0?"#27ae60":"#c0392b"}}>{(r.saldoSblm||0)>=0?"+":""}{fmtRp(r.saldoSblm||0)}</td><td style={S.td}>{fmtRp(hb)}</td><td style={{...S.td,fontWeight:700,color:"#b8b2ff"}}>{fmtRp(db)}</td><td style={{...S.td,fontWeight:700,color:(r.saldoAkhir||0)>=0?"#27ae60":"#c0392b"}}>{(r.saldoAkhir||0)>=0?"+":""}{fmtRp(r.saldoAkhir||0)}</td><td style={S.td}><KebabMenu items={[{icon:I.edit,label:"Edit",onClick:()=>startEdit(i)},{icon:I.trash,label:"Hapus",danger:true,onClick:()=>delRw(i)}]}/></td></tr>)})}
+      return(<tr key={i} style={i%2?{background:"rgba(255,255,255,0.03)"}:{}}><td style={{...S.td,textAlign:"left"}}><div style={{fontWeight:600}}>{r.periode}</div><div style={{fontSize:10,color:"#666"}}>{r.tgl}</div></td><td style={{...S.td,fontWeight:600}}>{fmtRp(r.gajiBersih)}</td><td style={{...S.td,color:(r.saldoSblm||0)>=0?"#27ae60":"#c0392b"}}>{(r.saldoSblm||0)>=0?"+":""}{fmtRp(r.saldoSblm||0)}</td><td style={S.td}>{fmtRp(hb)}</td><td style={{...S.td,fontWeight:700,color:"#b8b2ff"}}>{fmtRp(db)}</td><td style={{...S.td,fontWeight:700,color:(r.saldoAkhir||0)>=0?"#27ae60":"#c0392b"}}>{(r.saldoAkhir||0)>=0?"+":""}{fmtRp(r.saldoAkhir||0)}</td><td style={S.td}><KebabMenu items={[{icon:I.print,label:"Print Slip",onClick:()=>{if(r.slip)printSlip(emp,r.slip,r);else{const fakeSlip={...mkSlip(),dibayarkan:r.dibayarkan||0,periode:r.periode};printSlip(emp,fakeSlip,r)}}},{icon:I.edit,label:"Edit",onClick:()=>startEdit(i)},{icon:I.trash,label:"Hapus",danger:true,onClick:()=>delRw(i)}]}/></td></tr>)})}
     </tbody></table></div>}</div>);
     })()}
   </div>);
@@ -279,8 +276,7 @@ function MainApp({account:acc,onLogout,appData,setAppData,onSave}){
   const tIn=useMemo(()=>tx.filter(t=>t.tipe==="masuk").reduce((s,t)=>s+t.jumlah,0),[tx]);
   const tOut=useMemo(()=>tx.filter(t=>t.tipe==="keluar").reduce((s,t)=>s+t.jumlah,0),[tx]);
   const saldo=tSisa+tIn-tOut;const aPct=tAng>0?(tCair/tAng)*100:0;
-  const tBayar=useMemo(()=>employees.filter(e=>e.status==="Aktif").reduce((s,e)=>{const now=NM(e.slip&&e.slip.dibayarkan);const rw=(e.riwayat||[]).filter(r=>r.periode===curPer()).reduce((x,r)=>x+NM(r.dibayarkan),0);return s+now+rw},0),[employees]);
-  const tGaji=useMemo(()=>employees.filter(e=>e.status==="Aktif").reduce((s,e)=>{const c=calcSlip(e.slip||mkSlip());return s+c.gajiBersih+(e.saldo||0)},0),[employees]);
+  const tDibayar=useMemo(()=>employees.reduce((s,e)=>(e.riwayat||[]).reduce((a,r)=>a+(r.dibayarkan||r.totalDiterima||0),s),0),[employees]);
   const eAkt=useMemo(()=>employees.filter(e=>e.status==="Aktif").length,[employees]);
   const allPc=useMemo(()=>projects.flatMap(p=>p.pencairan.map(pc=>({...pc,pN:p.name}))),[projects]);
   const pcC=(s)=>allPc.filter(x=>x.status===s).length;const pcS=(s)=>allPc.filter(x=>x.status===s).reduce((a,x)=>a+x.jumlah,0);
@@ -341,7 +337,7 @@ function MainApp({account:acc,onLogout,appData,setAppData,onSave}){
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
         <div style={{...glC}}>
           <div style={{fontSize:12,fontWeight:700,color:cT,marginBottom:12}}>Ringkasan Operasional</div>
-          <div><div style={{fontSize:11,color:lt?"#666":T.sub}}>Karyawan: <b style={{color:cG}}>{eAkt}</b> {L.aktif}</div><div style={{fontSize:22,fontWeight:800,color:lt?"#1a3c34":T.acL,marginTop:4}}>{tGaji<0?"− ":""}{fmtRp(Math.abs(tGaji))}</div><div style={{fontSize:9,color:lt?"#999":T.mut,marginTop:2}}>{L.gajiBulan}</div></div>
+          <div><div style={{fontSize:11,color:lt?"#666":T.sub}}>Karyawan: <b style={{color:cG}}>{eAkt}</b> {L.aktif}</div><div style={{fontSize:22,fontWeight:800,color:lt?"#1a3c34":T.acL,marginTop:4}}>{fmtRp(tDibayar)}</div><div style={{fontSize:9,color:lt?"#999":T.mut,marginTop:2}}>Total Dibayarkan</div></div>
         </div>
         <div style={{...glC}}>
           <div style={{fontSize:12,fontWeight:700,color:cT,marginBottom:12}}>{L.transaksi}</div>
@@ -438,7 +434,7 @@ function MainApp({account:acc,onLogout,appData,setAppData,onSave}){
       </div>);
     })()}
     {tab==="karyawan"&&(<div>
-      <div style={S.grid3}>{[["Total",employees.length,"#1a3c34"],["Aktif",eAkt,"#27ae60"],["Dibayarkan",fmtRp(tBayar),"#2980b9"]].map(([l,v,c],i)=>(<div key={i} style={{...S.statCard,borderTop:`3px solid ${c}`}}><div style={S.statLbl}>{l}</div><div style={{...S.statVal,color:c,fontSize:typeof v==="string"?15:20}}>{v}</div></div>))}</div>
+      <div style={S.grid3}>{[["Total",employees.length,"#1a3c34"],["Aktif",eAkt,"#27ae60"],["Saldo Dibayarkan",fmtRp(tDibayar),"#2980b9"]].map(([l,v,c],i)=>(<div key={i} style={{...S.statCard,borderTop:`3px solid ${c}`}}><div style={S.statLbl}>{l}</div><div style={{...S.statVal,color:c,fontSize:typeof v==="string"?15:20}}>{v}</div></div>))}</div>
       <div style={{...S.card,paddingTop:10,paddingBottom:10,marginBottom:10}}><div style={{display:"flex",alignItems:"center",gap:8}}><span style={{color:"#888"}}>{I.search}</span><input style={{...S.input,border:"none",background:"transparent",paddingLeft:0,fontSize:13}} placeholder="Cari nama, jabatan, departemen..." value={empQ} onChange={e=>setEmpQ(e.target.value)}/>{empQ&&<button style={{...S.iconBtn,color:"#666"}} onClick={()=>setEmpQ("")}>{I.x}</button>}</div></div>
       {!showEF&&<button style={{...S.btnPri,marginBottom:10}} onClick={()=>{setShowEF(true);setEditE(null);setEF({nama:"",jabatan:"",dep:"",gaji:"",telp:"",status:"Aktif"})}}>{I.plus} Tambah</button>}
       {showEF&&<div style={S.card}><div style={S.cardHead}>{editE?"Edit":"Tambah"} Karyawan</div><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))",gap:8}}>{[["Nama","nama"],["Jabatan","jabatan"],["Dept","dep"],["Gaji","gaji"],["Telp","telp"]].map(([l,k])=>(<div key={k}><label style={S.lbl}>{l}</label><input style={S.input} type={k==="gaji"?"number":"text"} value={eF[k]} onChange={e=>setEF({...eF,[k]:e.target.value})}/></div>))}<div><label style={S.lbl}>Status</label><select style={S.select} value={eF.status} onChange={e=>setEF({...eF,status:e.target.value})}><option>Aktif</option><option>Nonaktif</option><option>Cuti</option></select></div></div><div style={{display:"flex",gap:6,marginTop:12}}>{editE?<button style={S.btnPri} onClick={()=>{setEmployees(employees.map(e=>e.id===editE?{...e,...eF,gaji:NM(eF.gaji)}:e));setEditE(null);setShowEF(false)}}>Simpan</button>:<button style={S.btnPri} onClick={()=>{if(!eF.nama||!eF.gaji)return;setEmployees([...employees,{id:uid(),...eF,gaji:NM(eF.gaji),slip:mkSlip(),saldo:0,kasbon:0,logKasbon:[],riwayat:[]}]);setEF({nama:"",jabatan:"",dep:"",gaji:"",telp:"",status:"Aktif"});setShowEF(false)}}>{I.plus} Simpan</button>}<button style={S.btnSec} onClick={()=>{setShowEF(false);setEditE(null)}}>Batal</button></div></div>}
