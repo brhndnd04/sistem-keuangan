@@ -248,7 +248,7 @@ function MainApp({account:acc,onLogout,appData,setAppData,onSave}){
   const[pF,setPF]=useState({name:"",anggaran:""});const[editP,setEditP]=useState(null);
   const[eF,setEF]=useState({nama:"",jabatan:"",dep:"",gaji:"",telp:"",status:"Aktif"});const[editE,setEditE]=useState(null);const[showEF,setShowEF]=useState(false);
   const[lF,setLF]=useState({dari:"",ke:"",jumlah:"",ket:""});const[tF,setTF]=useState({tipe:"masuk",jumlah:"",ket:"",proyek:""});
-  const[empQ,setEmpQ]=useState("");
+  const[empQ,setEmpQ]=useState("");const[empPer,setEmpPer]=useState("Semua");
   const[pengajuan,setPengajuan]=useState(appData.pengajuan||[]);
   const[pgSel,setPgSel]=useState(null);const[pgNF,setPgNF]=useState("");const[editPgId,setEditPgId]=useState(null);
   const[pgF,setPgF]=useState({tipe:"debit",jumlah:"",ket:""});const[editEntId,setEditEntId]=useState(null);const[editEntSaldo,setEditEntSaldo]=useState("");
@@ -276,7 +276,8 @@ function MainApp({account:acc,onLogout,appData,setAppData,onSave}){
   const tIn=useMemo(()=>tx.filter(t=>t.tipe==="masuk").reduce((s,t)=>s+t.jumlah,0),[tx]);
   const tOut=useMemo(()=>tx.filter(t=>t.tipe==="keluar").reduce((s,t)=>s+t.jumlah,0),[tx]);
   const saldo=tSisa+tIn-tOut;const aPct=tAng>0?(tCair/tAng)*100:0;
-  const tDibayar=useMemo(()=>employees.reduce((s,e)=>(e.riwayat||[]).reduce((a,r)=>a+(r.dibayarkan||r.totalDiterima||0),s),0),[employees]);
+  const allPeriodes=useMemo(()=>{const set=new Set();employees.forEach(e=>(e.riwayat||[]).forEach(r=>{if(r.periode)set.add(r.periode)}));return["Semua",...Array.from(set).sort((a,b)=>{const p=s=>{const m=BLN.indexOf(s.split(" ")[0]);const y=parseInt(s.split(" ")[1])||0;return y*12+m};return p(b)-p(a)})]},[employees]);
+  const tDibayar=useMemo(()=>employees.reduce((s,e)=>(e.riwayat||[]).filter(r=>empPer==="Semua"||r.periode===empPer).reduce((a,r)=>a+(r.dibayarkan||r.totalDiterima||0),s),0),[employees,empPer]);
   const eAkt=useMemo(()=>employees.filter(e=>e.status==="Aktif").length,[employees]);
   const allPc=useMemo(()=>projects.flatMap(p=>p.pencairan.map(pc=>({...pc,pN:p.name}))),[projects]);
   const pcC=(s)=>allPc.filter(x=>x.status===s).length;const pcS=(s)=>allPc.filter(x=>x.status===s).reduce((a,x)=>a+x.jumlah,0);
@@ -434,7 +435,7 @@ function MainApp({account:acc,onLogout,appData,setAppData,onSave}){
       </div>);
     })()}
     {tab==="karyawan"&&(<div>
-      <div style={S.grid3}>{[["Total",employees.length,"#1a3c34"],["Aktif",eAkt,"#27ae60"],["Saldo Dibayarkan",fmtRp(tDibayar),"#2980b9"]].map(([l,v,c],i)=>(<div key={i} style={{...S.statCard,borderTop:`3px solid ${c}`}}><div style={S.statLbl}>{l}</div><div style={{...S.statVal,color:c,fontSize:typeof v==="string"?15:20}}>{v}</div></div>))}</div>
+      <div style={S.grid3}>{[["Total",employees.length,"#1a3c34"],["Aktif",eAkt,"#27ae60"]].map(([l,v,c],i)=>(<div key={i} style={{...S.statCard,borderTop:`3px solid ${c}`}}><div style={S.statLbl}>{l}</div><div style={{...S.statVal,color:c,fontSize:20}}>{v}</div></div>))}<div style={{...S.statCard,borderTop:"3px solid #2980b9"}}><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:4}}><div style={S.statLbl}>Dibayarkan</div><select style={{...S.select,padding:"2px 6px",fontSize:10,minWidth:0,width:"auto",background:T.iBg,color:T.tx,border:`1px solid ${T.iBr}`,borderRadius:4}} value={empPer} onChange={e=>setEmpPer(e.target.value)}>{allPeriodes.map(p=><option key={p} value={p}>{p}</option>)}</select></div><div style={{...S.statVal,color:"#2980b9",fontSize:15}}>{fmtRp(tDibayar)}</div></div></div>
       <div style={{...S.card,paddingTop:10,paddingBottom:10,marginBottom:10}}><div style={{display:"flex",alignItems:"center",gap:8}}><span style={{color:"#888"}}>{I.search}</span><input style={{...S.input,border:"none",background:"transparent",paddingLeft:0,fontSize:13}} placeholder="Cari nama, jabatan, departemen..." value={empQ} onChange={e=>setEmpQ(e.target.value)}/>{empQ&&<button style={{...S.iconBtn,color:"#666"}} onClick={()=>setEmpQ("")}>{I.x}</button>}</div></div>
       {!showEF&&<button style={{...S.btnPri,marginBottom:10}} onClick={()=>{setShowEF(true);setEditE(null);setEF({nama:"",jabatan:"",dep:"",gaji:"",telp:"",status:"Aktif"})}}>{I.plus} Tambah</button>}
       {showEF&&<div style={S.card}><div style={S.cardHead}>{editE?"Edit":"Tambah"} Karyawan</div><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))",gap:8}}>{[["Nama","nama"],["Jabatan","jabatan"],["Dept","dep"],["Gaji","gaji"],["Telp","telp"]].map(([l,k])=>(<div key={k}><label style={S.lbl}>{l}</label><input style={S.input} type={k==="gaji"?"number":"text"} value={eF[k]} onChange={e=>setEF({...eF,[k]:e.target.value})}/></div>))}<div><label style={S.lbl}>Status</label><select style={S.select} value={eF.status} onChange={e=>setEF({...eF,status:e.target.value})}><option>Aktif</option><option>Nonaktif</option><option>Cuti</option></select></div></div><div style={{display:"flex",gap:6,marginTop:12}}>{editE?<button style={S.btnPri} onClick={()=>{setEmployees(employees.map(e=>e.id===editE?{...e,...eF,gaji:NM(eF.gaji)}:e));setEditE(null);setShowEF(false)}}>Simpan</button>:<button style={S.btnPri} onClick={()=>{if(!eF.nama||!eF.gaji)return;setEmployees([...employees,{id:uid(),...eF,gaji:NM(eF.gaji),slip:mkSlip(),saldo:0,kasbon:0,logKasbon:[],riwayat:[]}]);setEF({nama:"",jabatan:"",dep:"",gaji:"",telp:"",status:"Aktif"});setShowEF(false)}}>{I.plus} Simpan</button>}<button style={S.btnSec} onClick={()=>{setShowEF(false);setEditE(null)}}>Batal</button></div></div>}
