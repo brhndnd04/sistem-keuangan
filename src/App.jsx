@@ -157,7 +157,7 @@ return(<div style={{fontFamily:"'Plus Jakarta Sans',sans-serif",minHeight:"100vh
 </div></div>);}
 
 // ══════ SLIP DETAIL ══════
-function SlipDetail({emp,onBack,onUpdate,S,T}){
+function SlipDetail({emp,onBack,onUpdate,S,T,empPer}){
   const s=emp.slip||mkSlip();const[form,setForm]=useState({...s});const[slTab,setSlTab]=useState("current");const[kbF,setKbF]=useState({jumlah:"",ket:""});
   const[editRw,setEditRw]=useState(null);const[rwF,setRwF]=useState({});
   const c=calcSlip(form);const sB=emp.saldo||0;const harusBayar=c.gajiBersih+sB;const dibayar=form.dibayarkan||0;const saldoBaru=harusBayar-dibayar;const sKA=Math.max(0,(emp.kasbon||0)-form.potKasbon);
@@ -250,7 +250,6 @@ function MainApp({account:acc,onLogout,appData,setAppData,onSave}){
   const[lF,setLF]=useState({dari:"",ke:"",jumlah:"",ket:""});const[tF,setTF]=useState({tipe:"masuk",jumlah:"",ket:"",proyek:""});
   const[empQ,setEmpQ]=useState("");
 const[empPer,setEmpPer]=useState("Semua");
-const[empPerList,setEmpPerList]=useState([]);
   const[pengajuan,setPengajuan]=useState(appData.pengajuan||[]);
   const[pgSel,setPgSel]=useState(null);const[pgNF,setPgNF]=useState("");const[editPgId,setEditPgId]=useState(null);
   const[pgF,setPgF]=useState({tipe:"debit",jumlah:"",ket:""});const[editEntId,setEditEntId]=useState(null);const[editEntSaldo,setEditEntSaldo]=useState("");
@@ -278,27 +277,14 @@ const[empPerList,setEmpPerList]=useState([]);
   const tIn=useMemo(()=>tx.filter(t=>t.tipe==="masuk").reduce((s,t)=>s+t.jumlah,0),[tx]);
   const tOut=useMemo(()=>tx.filter(t=>t.tipe==="keluar").reduce((s,t)=>s+t.jumlah,0),[tx]);
   const saldo=tSisa+tIn-tOut;const aPct=tAng>0?(tCair/tAng)*100:0;
-  const allPeriodes=useMemo(()=>{
-    const set=new Set();
-    employees.forEach(e=>(e.riwayat||[]).forEach(r=>{if(r.periode)set.add(r.periode)}));
-    const list=["Semua",...Array.from(set).sort((a,b)=>{
-      const p=s=>{const m=BLN.indexOf(s.split(" ")[0]);const y=parseInt(s.split(" ")[1])||0;return y*12+m};
-      return p(b)-p(a)
-    })];
-    if(!empPerList.length)setEmpPerList(list);
-    return list;
-  },[employees,empPerList]);
-
-  const fEmpByPer=useMemo(()=>{
-    if(empPer==="Semua")return fEmp;
-    return fEmp.filter(e=>(e.riwayat||[]).some(r=>r.periode===empPer));
-  },[fEmp,empPer]);
-  const tDibayar=useMemo(()=>employees.reduce((s,e)=>(e.riwayat||[]).filter(r=>empPer==="Semua"||r.periode===empPer).reduce((a,r)=>a+(r.dibayarkan||r.totalDiterima||0),s),0),[employees,empPer]);
-  const tKeluar=useMemo(()=>employees.reduce((s,e)=>(e.riwayat||[]).filter(r=>empPer==="Semua"||r.periode===empPer).reduce((a,r)=>a+((r.slip||{}).totalPotongan||0),s),0),[employees,empPer]);
   const eAkt=useMemo(()=>employees.filter(e=>e.status==="Aktif").length,[employees]);
   const allPc=useMemo(()=>projects.flatMap(p=>p.pencairan.map(pc=>({...pc,pN:p.name}))),[projects]);
   const pcC=(s)=>allPc.filter(x=>x.status===s).length;const pcS=(s)=>allPc.filter(x=>x.status===s).reduce((a,x)=>a+x.jumlah,0);
   const fEmp=useMemo(()=>{if(!empQ)return employees;const q=empQ.toLowerCase();return employees.filter(e=>e.nama.toLowerCase().includes(q)||e.jabatan.toLowerCase().includes(q)||e.dep.toLowerCase().includes(q))},[employees,empQ]);
+  const allPeriodes=useMemo(()=>{const set=new Set();employees.forEach(e=>(e.riwayat||[]).forEach(r=>{if(r.periode)set.add(r.periode)}));return["Semua",...Array.from(set).sort((a,b)=>{const p=s=>{const m=BLN.indexOf(s.split(" ")[0]);const y=parseInt(s.split(" ")[1])||0;return y*12+m};return p(b)-p(a)})]},[employees]);
+  const fEmpByPer=useMemo(()=>{if(empPer==="Semua")return fEmp;return fEmp.filter(e=>(e.riwayat||[]).some(r=>r.periode===empPer))},[fEmp,empPer]);
+  const tDibayar=useMemo(()=>employees.reduce((s,e)=>(e.riwayat||[]).filter(r=>empPer==="Semua"||r.periode===empPer).reduce((a,r)=>a+(r.dibayarkan||r.totalDiterima||0),s),0),[employees,empPer]);
+  const tKeluar=useMemo(()=>employees.reduce((s,e)=>(e.riwayat||[]).filter(r=>empPer==="Semua"||r.periode===empPer).reduce((a,r)=>a+(r.harusBayar||r.gajiBersih||0),s),0),[employees,empPer]);
 
   const navs=[{id:"dashboard",icon:I.home,lb:L.dashboard},{id:"proyek",icon:I.folder,lb:L.proyek},{id:"karyawan",icon:I.users,lb:L.karyawan},{id:"pengajuan",icon:I.wallet,lb:L.pengajuan},{id:"pinjaman",icon:I.shuffle,lb:L.pinjaman},{id:"transaksi",icon:I.list,lb:L.transaksi},...(acc.role==="Admin"?[{id:"akun",icon:I.key,lb:L.akun}]:[]),{id:"settings",icon:I.gear,lb:L.settings}];
   const[akunF,setAkunF]=useState({username:"",password:"",nama:"",role:"Bendahara"});const[editAkun,setEditAkun]=useState(null);const[showPass,setShowPass]=useState({});
@@ -314,7 +300,7 @@ const[empPerList,setEmpPerList]=useState([]);
   const Top=({t})=>(<header style={S.topbar}><div style={{display:"flex",alignItems:"center",gap:10}}><button style={S.menuBtn} onClick={()=>setSideOpen(true)}>{I.menu}</button><h2 style={S.pageTitle}>{t}</h2>{saving&&<span style={{fontSize:10,color:"#27ae60",display:"flex",alignItems:"center",gap:4}}>{I.cloud} Menyimpan...</span>}</div><div style={S.topClock}><span style={S.topTime}>{fmtJam(now)}</span><span style={S.topDate}>{fmtTgl(now)}</span></div></header>);
 
   if(detP){const p=projects.find(x=>x.id===detP);if(p)return(<div style={S.shell}><style>{gCSS}</style><Side/><div style={S.content}><Top t="Detail Proyek"/><main style={S.main}><PD p={p} onBack={()=>setDetP(null)} onU={u=>setProjects(projects.map(x=>x.id===u.id?u:x))} S={S} T={T}/></main></div></div>)}
-  if(slipE){const e=employees.find(x=>x.id===slipE);if(e)return(<div style={S.shell}><style>{gCSS}</style><Side/><div style={S.content}><Top t="Slip Gaji"/><main style={S.main}><SlipDetail emp={e} onBack={()=>setSlipE(null)} onUpdate={u=>setEmployees(employees.map(x=>x.id===u.id?u:x))} S={S} T={T}/></main></div></div>)}
+  if(slipE){const e=employees.find(x=>x.id===slipE);if(e)return(<div style={S.shell}><style>{gCSS}</style><Side/><div style={S.content}><Top t="Slip Gaji"/><main style={S.main}><SlipDetail emp={e} onBack={()=>setSlipE(null)} onUpdate={u=>setEmployees(employees.map(x=>x.id===u.id?u:x))} S={S} T={T} empPer={empPer}/></main></div></div>)}
 
   return(<div style={S.shell}><style>{gCSS}</style><Side/><div style={S.content}><Top t={navs.find(n=>n.id===tab)?.lb}/>
   <main style={S.main}>
@@ -481,7 +467,7 @@ const[empPerList,setEmpPerList]=useState([]);
           <select style={{...S.select,padding:"2px 6px",fontSize:12,minWidth:120,background:T.iBg,color:T.tx,border:`1px solid ${T.iBr}`,borderRadius:4}} value={empPer} onChange={e=>setEmpPer(e.target.value)}>
             {allPeriodes.map(p=><option key={p} value={p}>{p}</option>)}
           </select>
-          <button style={{...S.btnMini,marginLeft:8}} onClick={()=>{const p=prompt("Masukkan periode baru (format: Mmmm YYYY)");if(p){const ps=[...empPerList,p].sort().reverse();setEmpPerList(ps);setEmpPer(p)}}}>+ Periode</button>
+          <button style={{...S.btnMini,marginLeft:8}} onClick={()=>{const nm=BLN.map((b,i)=>`${b} ${new Date().getFullYear()}`);const p=prompt("Masukkan periode baru\nContoh: September 2026");if(p&&p.trim())setEmpPer(p.trim())}}>+ Periode</button>
         </div>
         <div style={{display:"flex",alignItems:"center",gap:8}}>
           <span style={{color:"#888"}}>{I.search}</span>
