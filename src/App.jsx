@@ -445,6 +445,9 @@ const[empPer,setEmpPer]=useState("Semua");
       const perEmpCount=(per)=>employees.filter(e=>(e.riwayat||[]).some(r=>r.periode===per)).length;
       const openFolder=(per)=>{setEmpPerSel(per);setEmpPer(per);setEmpQ("")};
       const backToFolders=()=>{setEmpPerSel(null);setEmpPer("Semua");setEmpQ("");setShowEF(false)};
+      const tambahPeriode=()=>{const p=prompt("Masukkan periode baru\nContoh: September 2026");if(!p||!p.trim())return;const nm=p.trim();const exists=employees.some(e=>(e.riwayat||[]).some(r=>r.periode===nm));if(exists){openFolder(nm);return}const updated=employees.map(e=>{const rec={periode:nm,slip:{...mkSlip(),gajiPerhari:e.slip?.gajiPerhari||0,tunjangan:e.slip?.tunjangan||0},gajiBersih:0,harusBayar:0,dibayarkan:0,saldoSblm:0,saldoAkhir:0,tgl:fmtShort(new Date())};return{...e,riwayat:[rec,...(e.riwayat||[])]}});setEmployees(updated);openFolder(nm)};
+      const hapusPeriode=(per)=>{if(!confirm(`Hapus folder "${per}" beserta semua data gaji di periode ini?`))return;setEmployees(employees.map(e=>({...e,riwayat:(e.riwayat||[]).filter(r=>r.periode!==per)})))};
+      const renamePeriode=(per)=>{const nm=prompt("Ubah nama periode:",per);if(!nm||!nm.trim()||nm.trim()===per)return;const newNm=nm.trim();setEmployees(employees.map(e=>({...e,riwayat:(e.riwayat||[]).map(r=>r.periode===per?{...r,periode:newNm}:r)})))};
       const empInPer=empPerSel?employees.filter(e=>(e.riwayat||[]).some(r=>r.periode===empPerSel)):[];
       const fEmpInPer=empQ?empInPer.filter(e=>e.nama.toLowerCase().includes(empQ.toLowerCase())||e.jabatan.toLowerCase().includes(empQ.toLowerCase())||e.dep.toLowerCase().includes(empQ.toLowerCase())):empInPer;
 
@@ -453,7 +456,7 @@ const[empPer,setEmpPer]=useState("Semua");
         return(<div>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
             <div style={{fontSize:13,color:T.sub}}>Pilih periode untuk melihat data karyawan</div>
-            <button style={S.btnPri} onClick={()=>{const p=prompt("Masukkan periode baru\nContoh: September 2026");if(p&&p.trim())openFolder(p.trim())}}>{I.plus} Tambah Periode</button>
+            <button style={S.btnPri} onClick={tambahPeriode}>{I.plus} Tambah Periode</button>
           </div>
           {!periodeList.length?<div style={{...S.card,textAlign:"center",padding:"40px 20px"}}><div style={{fontSize:40,marginBottom:12}}>📁</div><div style={{fontSize:14,color:T.sub,marginBottom:8}}>Belum ada data periode</div><div style={{fontSize:12,color:T.sub}}>Klik "Tambah Periode" untuk membuat folder periode baru, atau buat slip gaji karyawan terlebih dahulu.</div></div>
           :<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:12}}>
@@ -468,9 +471,12 @@ const[empPer,setEmpPer]=useState("Semua");
                       <div style={{fontSize:11,color:T.sub,marginTop:2}}>{empC} karyawan</div>
                     </div>
                   </div>
-                  <div style={{textAlign:"right"}}>
-                    <div style={{fontSize:9,color:T.sub,textTransform:"uppercase",letterSpacing:0.5}}>Saldo Keluar</div>
-                    <div style={{fontWeight:700,fontSize:14,color:"#c0392b",marginTop:2}}>{fmtRp(keluar)}</div>
+                  <div style={{display:"flex",alignItems:"center",gap:8}}>
+                    <div style={{textAlign:"right"}}>
+                      <div style={{fontSize:9,color:T.sub,textTransform:"uppercase",letterSpacing:0.5}}>Saldo Keluar</div>
+                      <div style={{fontWeight:700,fontSize:14,color:"#c0392b",marginTop:2}}>{fmtRp(keluar)}</div>
+                    </div>
+                    <div onClick={e=>e.stopPropagation()}><KebabMenu items={[{icon:I.edit,label:"Edit Nama",onClick:()=>renamePeriode(per)},{icon:I.trash,label:"Hapus Periode",danger:true,onClick:()=>hapusPeriode(per)}]}/></div>
                   </div>
                 </div>
                 <div style={{display:"flex",justifyContent:"space-between",marginTop:14,paddingTop:10,borderTop:`1px solid ${T.cb}`}}>
