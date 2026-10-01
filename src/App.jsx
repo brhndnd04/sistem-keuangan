@@ -246,12 +246,12 @@ function MainApp({account:acc,onLogout,appData,setAppData,onSave}){
   const[loans,setLoans]=useState(appData.loans||[]);
   const[tx,setTx]=useState(appData.transactions||[]);
   const[pF,setPF]=useState({name:"",anggaran:""});const[editP,setEditP]=useState(null);
-  const[eF,setEF]=useState({nama:"",jabatan:"",dep:"",gaji:"",telp:"",status:"Aktif"});const[editE,setEditE]=useState(null);const[showEF,setShowEF]=useState(false);
+  const[eF,setEF]=useState({nama:"",jabatan:"",dep:"",gaji:"",telp:"",status:"Aktif",kategori:"Laki-Laki"});const[editE,setEditE]=useState(null);const[showEF,setShowEF]=useState(false);
   const[lF,setLF]=useState({dari:"",ke:"",jumlah:"",ket:""});const[tF,setTF]=useState({tipe:"masuk",jumlah:"",ket:"",proyek:""});
   const[empQ,setEmpQ]=useState("");
 const[empPer,setEmpPer]=useState("Semua");
   const[empPerSel,setEmpPerSel]=useState(null);
-  const[empTab,setEmpTab]=useState("karyawan");
+  const[empTab,setEmpTab]=useState("master");
   const[pengajuan,setPengajuan]=useState(appData.pengajuan||[]);
   const[pgSel,setPgSel]=useState(null);const[pgNF,setPgNF]=useState("");const[editPgId,setEditPgId]=useState(null);
   const[pgF,setPgF]=useState({tipe:"debit",jumlah:"",ket:""});const[editEntId,setEditEntId]=useState(null);const[editEntSaldo,setEditEntSaldo]=useState("");
@@ -440,30 +440,36 @@ const[empPer,setEmpPer]=useState("Semua");
       </div>);
     })()}
     {tab==="karyawan"&&(()=>{
-      const periodeList=allPeriodes.filter(p=>p!=="Semua");
-      const perKeluar=(per)=>employees.reduce((s,e)=>(e.riwayat||[]).filter(r=>r.periode===per).reduce((a,r)=>a+(r.harusBayar||r.gajiBersih||0),s),0);
-      const perDibayar=(per)=>employees.reduce((s,e)=>(e.riwayat||[]).filter(r=>r.periode===per).reduce((a,r)=>a+(r.dibayarkan||r.totalDiterima||0),s),0);
-      const perEmpCount=(per)=>employees.filter(e=>(e.riwayat||[]).some(r=>r.periode===per)).length;
+      const catMap={"laki":"Laki-Laki","ibu":"Ibu-Ibu","admin":"Administrasi"};
+      const isPerTab=["laki","ibu","admin"].includes(empTab);
+      const curCat=catMap[empTab]||"";
+      const catEmp=isPerTab?employees.filter(e=>(e.kategori||"Laki-Laki")===curCat):employees;
+      const periodeList=isPerTab?[...new Set(catEmp.flatMap(e=>(e.riwayat||[]).map(r=>r.periode)))].sort((a,b)=>b.localeCompare(a)):allPeriodes.filter(p=>p!=="Semua");
+      const perKeluar=(per)=>catEmp.reduce((s,e)=>(e.riwayat||[]).filter(r=>r.periode===per).reduce((a,r)=>a+(r.harusBayar||r.gajiBersih||0),s),0);
+      const perDibayar=(per)=>catEmp.reduce((s,e)=>(e.riwayat||[]).filter(r=>r.periode===per).reduce((a,r)=>a+(r.dibayarkan||r.totalDiterima||0),s),0);
+      const perEmpCount=(per)=>catEmp.filter(e=>(e.riwayat||[]).some(r=>r.periode===per)).length;
       const openFolder=(per)=>{setEmpPerSel(per);setEmpPer(per);setEmpQ("")};
       const backToFolders=()=>{setEmpPerSel(null);setEmpPer("Semua");setEmpQ("");setShowEF(false)};
-      const tambahPeriode=()=>{const p=prompt("Masukkan periode baru\nContoh: September 2026");if(!p||!p.trim())return;const nm=p.trim();const exists=employees.some(e=>(e.riwayat||[]).some(r=>r.periode===nm));if(exists){openFolder(nm);return}const updated=employees.map(e=>{const rec={periode:nm,slip:{...mkSlip(),gajiPerhari:e.slip?.gajiPerhari||0,tunjangan:e.slip?.tunjangan||0},gajiBersih:0,harusBayar:0,dibayarkan:0,saldoSblm:0,saldoAkhir:0,tgl:fmtShort(new Date())};return{...e,riwayat:[rec,...(e.riwayat||[])]}});setEmployees(updated);openFolder(nm)};
-      const hapusPeriode=(per)=>{if(!confirm(`Hapus folder "${per}" beserta semua data gaji di periode ini?`))return;setEmployees(employees.map(e=>({...e,riwayat:(e.riwayat||[]).filter(r=>r.periode!==per)})))};
+      const tambahPeriode=()=>{const p=prompt("Masukkan periode baru\nContoh: September 2026");if(!p||!p.trim())return;const nm=p.trim();const exists=catEmp.some(e=>(e.riwayat||[]).some(r=>r.periode===nm));if(exists){openFolder(nm);return}const updated=employees.map(e=>{if((e.kategori||"Laki-Laki")!==curCat)return e;const rec={periode:nm,slip:{...mkSlip(),gajiPerhari:e.slip?.gajiPerhari||0,tunjangan:e.slip?.tunjangan||0},gajiBersih:0,harusBayar:0,dibayarkan:0,saldoSblm:0,saldoAkhir:0,tgl:fmtShort(new Date())};return{...e,riwayat:[rec,...(e.riwayat||[])]}});setEmployees(updated);openFolder(nm)};
+      const hapusPeriode=(per)=>{if(!confirm(`Hapus folder "${per}" beserta semua data gaji di periode ini?`))return;setEmployees(employees.map(e=>{if(isPerTab&&(e.kategori||"Laki-Laki")!==curCat)return e;return{...e,riwayat:(e.riwayat||[]).filter(r=>r.periode!==per)}}))};
       const renamePeriode=(per)=>{const nm=prompt("Ubah nama periode:",per);if(!nm||!nm.trim()||nm.trim()===per)return;const newNm=nm.trim();setEmployees(employees.map(e=>({...e,riwayat:(e.riwayat||[]).map(r=>r.periode===per?{...r,periode:newNm}:r)})))};
-      const empInPer=empPerSel?employees.filter(e=>(e.riwayat||[]).some(r=>r.periode===empPerSel)):[];
+      const empInPer=empPerSel?catEmp.filter(e=>(e.riwayat||[]).some(r=>r.periode===empPerSel)):[];
       const fEmpInPer=empQ?empInPer.filter(e=>e.nama.toLowerCase().includes(empQ.toLowerCase())||e.jabatan.toLowerCase().includes(empQ.toLowerCase())||e.dep.toLowerCase().includes(empQ.toLowerCase())):empInPer;
       const fEmpAll=empQ?employees.filter(e=>e.nama.toLowerCase().includes(empQ.toLowerCase())||e.jabatan.toLowerCase().includes(empQ.toLowerCase())||e.dep.toLowerCase().includes(empQ.toLowerCase())):employees;
 
-      const subTabStyle=(active)=>({padding:"8px 20px",borderRadius:20,border:"none",cursor:"pointer",fontSize:13,fontWeight:600,transition:"all 0.2s",background:active?"linear-gradient(135deg,#6c63ff,#48c6ef)":"transparent",color:active?"#fff":T.sub,boxShadow:active?"0 2px 8px rgba(108,99,255,0.3)":"none"});
+      const subTabStyle=(active)=>({padding:"8px 16px",borderRadius:20,border:"none",cursor:"pointer",fontSize:12,fontWeight:600,transition:"all 0.2s",background:active?"linear-gradient(135deg,#6c63ff,#48c6ef)":"transparent",color:active?"#fff":T.sub,boxShadow:active?"0 2px 8px rgba(108,99,255,0.3)":"none",whiteSpace:"nowrap"});
 
       return(<div>
-        {/* === SUB-TAB SELECTOR === */}
-        <div style={{display:"flex",gap:4,marginBottom:16,background:T.iBg,borderRadius:24,padding:4,border:`1px solid ${T.cb}`}}>
-          <button style={subTabStyle(empTab==="karyawan")} onClick={()=>{setEmpTab("karyawan");setEmpQ("");setShowEF(false)}}>👥 Karyawan</button>
-          <button style={subTabStyle(empTab==="periode")} onClick={()=>{setEmpTab("periode");setEmpQ("");setShowEF(false);setEmpPerSel(null);setEmpPer("Semua")}}>📁 Periode Gaji</button>
+        {/* === SUB-TAB SELECTOR (4 tabs) === */}
+        <div style={{display:"flex",gap:4,marginBottom:16,background:T.iBg,borderRadius:24,padding:4,border:`1px solid ${T.cb}`,overflowX:"auto"}}>
+          <button style={subTabStyle(empTab==="master")} onClick={()=>{setEmpTab("master");setEmpQ("");setShowEF(false)}}>👥 Master Karyawan</button>
+          <button style={subTabStyle(empTab==="laki")} onClick={()=>{setEmpTab("laki");setEmpQ("");setShowEF(false);setEmpPerSel(null);setEmpPer("Semua")}}>👨 Karyawan Laki-Laki</button>
+          <button style={subTabStyle(empTab==="ibu")} onClick={()=>{setEmpTab("ibu");setEmpQ("");setShowEF(false);setEmpPerSel(null);setEmpPer("Semua")}}>👩 Karyawan Ibu-Ibu</button>
+          <button style={subTabStyle(empTab==="admin")} onClick={()=>{setEmpTab("admin");setEmpQ("");setShowEF(false);setEmpPerSel(null);setEmpPer("Semua")}}>📋 Karyawan Administrasi</button>
         </div>
 
-        {/* === SUB-TAB: KARYAWAN (Master List) === */}
-        {empTab==="karyawan"&&(<div>
+        {/* === SUB-TAB: MASTER KARYAWAN === */}
+        {empTab==="master"&&(<div>
           <div style={{...S.card,paddingTop:10,paddingBottom:10,marginBottom:10,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
             <div style={{display:"flex",alignItems:"center",gap:8,flex:1}}>
               <span style={{color:"#888"}}>{I.search}</span>
@@ -473,23 +479,23 @@ const[empPer,setEmpPer]=useState("Semua");
           </div>
 
           <div style={{marginBottom:12}}>
-            {!showEF&&<button style={S.btnPri} onClick={()=>{setShowEF(true);setEditE(null);setEF({nama:"",jabatan:"",dep:"",gaji:"",telp:"",status:"Aktif"})}}>{I.plus} Tambah Karyawan Baru</button>}
-            {showEF&&<div style={S.card}><div style={S.cardHead}>{editE?"Edit":"Tambah"} Karyawan</div><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))",gap:8}}>{[["Nama","nama"],["Jabatan","jabatan"],["Dept","dep"],["Gaji","gaji"],["Telp","telp"]].map(([l,k])=>(<div key={k}><label style={S.lbl}>{l}</label><input style={S.input} type={k==="gaji"?"number":"text"} value={eF[k]} onChange={e=>setEF({...eF,[k]:e.target.value})}/></div>))}<div><label style={S.lbl}>Status</label><select style={S.select} value={eF.status} onChange={e=>setEF({...eF,status:e.target.value})}><option>Aktif</option><option>Nonaktif</option><option>Cuti</option></select></div></div><div style={{display:"flex",gap:6,marginTop:12}}>{editE?<button style={S.btnPri} onClick={()=>{setEmployees(employees.map(e=>e.id===editE?{...e,...eF,gaji:NM(eF.gaji)}:e));setEditE(null);setShowEF(false)}}>Simpan</button>:<button style={S.btnPri} onClick={()=>{if(!eF.nama||!eF.gaji)return;setEmployees([...employees,{id:uid(),...eF,gaji:NM(eF.gaji),slip:mkSlip(),saldo:0,kasbon:0,logKasbon:[],riwayat:[]}]);setEF({nama:"",jabatan:"",dep:"",gaji:"",telp:"",status:"Aktif"});setShowEF(false)}}>{I.plus} Simpan</button>}<button style={S.btnSec} onClick={()=>{setShowEF(false);setEditE(null)}}>Batal</button></div></div>}
+            {!showEF&&<button style={S.btnPri} onClick={()=>{setShowEF(true);setEditE(null);setEF({nama:"",jabatan:"",dep:"",gaji:"",telp:"",status:"Aktif",kategori:"Laki-Laki"})}}>{I.plus} Tambah Karyawan Baru</button>}
+            {showEF&&<div style={S.card}><div style={S.cardHead}>{editE?"Edit":"Tambah"} Karyawan</div><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))",gap:8}}>{[["Nama","nama"],["Jabatan","jabatan"],["Dept","dep"],["Gaji","gaji"],["Telp","telp"]].map(([l,k])=>(<div key={k}><label style={S.lbl}>{l}</label><input style={S.input} type={k==="gaji"?"number":"text"} value={eF[k]} onChange={e=>setEF({...eF,[k]:e.target.value})}/></div>))}<div><label style={S.lbl}>Kategori</label><select style={S.select} value={eF.kategori} onChange={e=>setEF({...eF,kategori:e.target.value})}><option>Laki-Laki</option><option>Ibu-Ibu</option><option>Administrasi</option></select></div><div><label style={S.lbl}>Status</label><select style={S.select} value={eF.status} onChange={e=>setEF({...eF,status:e.target.value})}><option>Aktif</option><option>Nonaktif</option><option>Cuti</option></select></div></div><div style={{display:"flex",gap:6,marginTop:12}}>{editE?<button style={S.btnPri} onClick={()=>{setEmployees(employees.map(e=>e.id===editE?{...e,...eF,gaji:NM(eF.gaji)}:e));setEditE(null);setShowEF(false)}}>Simpan</button>:<button style={S.btnPri} onClick={()=>{if(!eF.nama||!eF.gaji)return;setEmployees([...employees,{id:uid(),...eF,gaji:NM(eF.gaji),slip:mkSlip(),saldo:0,kasbon:0,logKasbon:[],riwayat:[]}]);setEF({nama:"",jabatan:"",dep:"",gaji:"",telp:"",status:"Aktif",kategori:"Laki-Laki"});setShowEF(false)}}>{I.plus} Simpan</button>}<button style={S.btnSec} onClick={()=>{setShowEF(false);setEditE(null)}}>Batal</button></div></div>}
           </div>
 
           <div style={S.card}><div style={S.cardHead}>Semua Karyawan ({fEmpAll.length}{empQ?` dari ${employees.length}`:""})</div>
             {!fEmpAll.length?<div style={S.empty}>{empQ?"Tidak ditemukan":"Belum ada karyawan"}</div>
-            :<div style={S.tableWrap}><table style={S.table}><thead><tr><th style={S.th}>No</th><th style={{...S.th,textAlign:"left"}}>Nama</th><th style={{...S.th,textAlign:"left"}}>Jabatan/Dept</th><th style={S.th}>Gaji Pokok</th><th style={S.th}>Status</th><th style={S.th}>Aksi</th></tr></thead><tbody>{fEmpAll.map((e,i)=>(<tr key={e.id} style={i%2?{background:"rgba(255,255,255,0.03)"}:{}}><td style={S.td}>{i+1}</td><td style={{...S.td,textAlign:"left"}}><div style={{fontWeight:500}}>{e.nama}</div><div style={{fontSize:10,color:"#666"}}>{e.telp}</div></td><td style={{...S.td,textAlign:"left",fontSize:11}}>{e.jabatan}<br/><span style={{...S.badge,background:"rgba(108,99,255,0.15)",color:"#b8b2ff"}}>{e.dep}</span></td><td style={{...S.td,fontWeight:600}}>{fmtRp(e.gaji)}</td><td style={S.td}><span style={{...S.badge,background:e.status==="Aktif"?"rgba(39,174,96,0.15)":"rgba(192,57,43,0.15)",color:e.status==="Aktif"?"#27ae60":"#c0392b"}}>{e.status}</span></td><td style={S.td}><div style={{display:"flex",gap:4,justifyContent:"center"}}><KebabMenu items={[{icon:I.edit,label:"Edit",onClick:()=>{setEditE(e.id);setEF({nama:e.nama,jabatan:e.jabatan,dep:e.dep,gaji:e.gaji.toString(),telp:e.telp||"",status:e.status});setShowEF(true)}},{icon:I.trash,label:"Hapus",danger:true,onClick:()=>{if(confirm(`Hapus karyawan "${e.nama}"?`))setEmployees(employees.filter(x=>x.id!==e.id))}}]}/></div></td></tr>))}</tbody></table></div>}
+            :<div style={S.tableWrap}><table style={S.table}><thead><tr><th style={S.th}>No</th><th style={{...S.th,textAlign:"left"}}>Nama</th><th style={{...S.th,textAlign:"left"}}>Jabatan/Dept</th><th style={S.th}>Kategori</th><th style={S.th}>Gaji Pokok</th><th style={S.th}>Status</th><th style={S.th}>Aksi</th></tr></thead><tbody>{fEmpAll.map((e,i)=>(<tr key={e.id} style={i%2?{background:"rgba(255,255,255,0.03)"}:{}}><td style={S.td}>{i+1}</td><td style={{...S.td,textAlign:"left"}}><div style={{fontWeight:500}}>{e.nama}</div><div style={{fontSize:10,color:"#666"}}>{e.telp}</div></td><td style={{...S.td,textAlign:"left",fontSize:11}}>{e.jabatan}<br/><span style={{...S.badge,background:"rgba(108,99,255,0.15)",color:"#b8b2ff"}}>{e.dep}</span></td><td style={S.td}><span style={{...S.badge,background:e.kategori==="Ibu-Ibu"?"rgba(255,105,180,0.15)":e.kategori==="Administrasi"?"rgba(52,152,219,0.15)":"rgba(46,204,113,0.15)",color:e.kategori==="Ibu-Ibu"?"#ff69b4":e.kategori==="Administrasi"?"#3498db":"#2ecc71"}}>{e.kategori||"Laki-Laki"}</span></td><td style={{...S.td,fontWeight:600}}>{fmtRp(e.gaji)}</td><td style={S.td}><span style={{...S.badge,background:e.status==="Aktif"?"rgba(39,174,96,0.15)":"rgba(192,57,43,0.15)",color:e.status==="Aktif"?"#27ae60":"#c0392b"}}>{e.status}</span></td><td style={S.td}><div style={{display:"flex",gap:4,justifyContent:"center"}}><KebabMenu items={[{icon:I.edit,label:"Edit",onClick:()=>{setEditE(e.id);setEF({nama:e.nama,jabatan:e.jabatan,dep:e.dep,gaji:e.gaji.toString(),telp:e.telp||"",status:e.status,kategori:e.kategori||"Laki-Laki"});setShowEF(true)}},{icon:I.trash,label:"Hapus",danger:true,onClick:()=>{if(confirm(`Hapus karyawan "${e.nama}"?`))setEmployees(employees.filter(x=>x.id!==e.id))}}]}/></div></td></tr>))}</tbody></table></div>}
           </div>
         </div>)}
 
-        {/* === SUB-TAB: PERIODE GAJI === */}
-        {empTab==="periode"&&!empPerSel&&(<div>
+        {/* === SUB-TAB: CATEGORY PERIODE (Folder List) === */}
+        {isPerTab&&!empPerSel&&(<div>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
-            <div style={{fontSize:13,color:T.sub}}>Pilih periode untuk melihat data gaji karyawan</div>
+            <div style={{fontSize:13,color:T.sub}}>Periode gaji {curCat} — pilih folder untuk melihat data</div>
             <button style={S.btnPri} onClick={tambahPeriode}>{I.plus} Tambah Periode</button>
           </div>
-          {!periodeList.length?<div style={{...S.card,textAlign:"center",padding:"40px 20px"}}><div style={{fontSize:40,marginBottom:12}}>📁</div><div style={{fontSize:14,color:T.sub,marginBottom:8}}>Belum ada data periode</div><div style={{fontSize:12,color:T.sub}}>Klik "Tambah Periode" untuk membuat folder periode baru.</div></div>
+          {!periodeList.length?<div style={{...S.card,textAlign:"center",padding:"40px 20px"}}><div style={{fontSize:40,marginBottom:12}}>📁</div><div style={{fontSize:14,color:T.sub,marginBottom:8}}>Belum ada data periode untuk {curCat}</div><div style={{fontSize:12,color:T.sub}}>Klik "Tambah Periode" untuk membuat folder periode baru.</div></div>
           :<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:12}}>
             {periodeList.map(per=>{const keluar=perKeluar(per);const dibayar=perDibayar(per);const empC=perEmpCount(per);return(
               <div key={per} onClick={()=>openFolder(per)} style={{background:T.iBg,borderRadius:12,padding:"18px 20px",border:`1px solid ${T.cb}`,cursor:"pointer",transition:"all 0.2s",position:"relative",overflow:"hidden"}}>
@@ -499,7 +505,7 @@ const[empPer,setEmpPer]=useState("Semua");
                     <div style={{fontSize:28,opacity:0.8}}>📁</div>
                     <div>
                       <div style={{fontWeight:700,fontSize:15,color:T.acL}}>{per}</div>
-                      <div style={{fontSize:11,color:T.sub,marginTop:2}}>{empC} karyawan</div>
+                      <div style={{fontSize:11,color:T.sub,marginTop:2}}>{empC} karyawan {curCat}</div>
                     </div>
                   </div>
                   <div style={{display:"flex",alignItems:"center",gap:8}}>
@@ -519,13 +525,13 @@ const[empPer,setEmpPer]=useState("Semua");
           </div>}
         </div>)}
 
-        {/* === INSIDE PERIOD FOLDER VIEW === */}
-        {empTab==="periode"&&empPerSel&&(()=>{
+        {/* === INSIDE CATEGORY PERIOD FOLDER VIEW === */}
+        {isPerTab&&empPerSel&&(()=>{
           const selKeluar=perKeluar(empPerSel);
           const selDibayar=perDibayar(empPerSel);
-          const empNotInPer=employees.filter(e=>!(e.riwayat||[]).some(r=>r.periode===empPerSel));
+          const empNotInPer=catEmp.filter(e=>!(e.riwayat||[]).some(r=>r.periode===empPerSel));
           const addEmpToPer=(eid)=>{setEmployees(employees.map(e=>{if(e.id!==eid)return e;const rec={periode:empPerSel,slip:{...mkSlip(),gajiPerhari:e.slip?.gajiPerhari||0,tunjangan:e.slip?.tunjangan||0},gajiBersih:0,harusBayar:0,dibayarkan:0,saldoSblm:0,saldoAkhir:0,tgl:fmtShort(new Date())};return{...e,riwayat:[rec,...(e.riwayat||[])]}}))};
-          const addAllEmpToPer=()=>{if(!empNotInPer.length)return;if(!confirm(`Masukkan ${empNotInPer.length} karyawan ke periode "${empPerSel}"?`))return;setEmployees(employees.map(e=>{if((e.riwayat||[]).some(r=>r.periode===empPerSel))return e;const rec={periode:empPerSel,slip:{...mkSlip(),gajiPerhari:e.slip?.gajiPerhari||0,tunjangan:e.slip?.tunjangan||0},gajiBersih:0,harusBayar:0,dibayarkan:0,saldoSblm:0,saldoAkhir:0,tgl:fmtShort(new Date())};return{...e,riwayat:[rec,...(e.riwayat||[])]}}))};
+          const addAllEmpToPer=()=>{if(!empNotInPer.length)return;if(!confirm(`Masukkan ${empNotInPer.length} karyawan ${curCat} ke periode "${empPerSel}"?`))return;setEmployees(employees.map(e=>{if((e.kategori||"Laki-Laki")!==curCat)return e;if((e.riwayat||[]).some(r=>r.periode===empPerSel))return e;const rec={periode:empPerSel,slip:{...mkSlip(),gajiPerhari:e.slip?.gajiPerhari||0,tunjangan:e.slip?.tunjangan||0},gajiBersih:0,harusBayar:0,dibayarkan:0,saldoSblm:0,saldoAkhir:0,tgl:fmtShort(new Date())};return{...e,riwayat:[rec,...(e.riwayat||[])]}}))};
           const removeEmpFromPer=(eid,nama)=>{if(!confirm(`Keluarkan "${nama}" dari periode "${empPerSel}"?`))return;setEmployees(employees.map(e=>e.id===eid?{...e,riwayat:(e.riwayat||[]).filter(r=>r.periode!==empPerSel)}:e))};
           return(<div>
             <button style={{...S.btnSec,marginBottom:12,display:"flex",alignItems:"center",gap:6}} onClick={backToFolders}>{I.back} Kembali ke Daftar Periode</button>
@@ -534,7 +540,7 @@ const[empPer,setEmpPer]=useState("Semua");
                 <span style={{fontSize:24}}>📁</span>
                 <div>
                   <div style={{fontWeight:700,fontSize:18,color:T.acL}}>{empPerSel}</div>
-                  <div style={{fontSize:11,color:T.sub}}>{fEmpInPer.length} karyawan dalam periode ini</div>
+                  <div style={{fontSize:11,color:T.sub}}>{fEmpInPer.length} karyawan {curCat} dalam periode ini</div>
                 </div>
               </div>
               <div style={{display:"flex",gap:16,marginTop:10}}>
@@ -547,8 +553,8 @@ const[empPer,setEmpPer]=useState("Semua");
             {/* === TOMBOL MASUKKAN KARYAWAN === */}
             <div style={{display:"flex",gap:8,marginBottom:10,flexWrap:"wrap",alignItems:"center"}}>
               <button style={S.btnPri} onClick={addAllEmpToPer} disabled={!empNotInPer.length}>{I.plus} Masukkan Semua ({empNotInPer.length})</button>
-              {empNotInPer.length>0&&<select style={{...S.select,minWidth:200,fontSize:12}} value="" onChange={e=>{if(e.target.value)addEmpToPer(e.target.value)}}><option value="">➕ Pilih karyawan untuk dimasukkan...</option>{empNotInPer.map(e=>(<option key={e.id} value={e.id}>{e.nama} — {e.jabatan} ({e.dep})</option>))}</select>}
-              {!empNotInPer.length&&<span style={{fontSize:11,color:"#27ae60",fontWeight:500}}>✓ Semua karyawan sudah masuk</span>}
+              {empNotInPer.length>0&&<select style={{...S.select,minWidth:200,fontSize:12}} value="" onChange={e=>{if(e.target.value)addEmpToPer(e.target.value)}}><option value="">➕ Pilih karyawan {curCat}...</option>{empNotInPer.map(e=>(<option key={e.id} value={e.id}>{e.nama} — {e.jabatan} ({e.dep})</option>))}</select>}
+              {!empNotInPer.length&&<span style={{fontSize:11,color:"#27ae60",fontWeight:500}}>✓ Semua karyawan {curCat} sudah masuk</span>}
             </div>
 
             <div style={{...S.card,paddingTop:10,paddingBottom:10,marginBottom:10,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
@@ -559,9 +565,9 @@ const[empPer,setEmpPer]=useState("Semua");
               </div>
             </div>
 
-            <div style={S.card}><div style={S.cardHead}>Karyawan · {empPerSel} {empQ&&<span style={{fontWeight:400,color:"#666",fontSize:11}}>· {fEmpInPer.length} hasil</span>}</div>
-              {!fEmpInPer.length?<div style={S.empty}>{empQ?"Tidak ditemukan":"Belum ada data karyawan di periode ini"}</div>
-              :<div style={S.tableWrap}><table style={S.table}><thead><tr><th style={S.th}>No</th><th style={{...S.th,textAlign:"left"}}>Nama</th><th style={{...S.th,textAlign:"left"}}>Jabatan</th><th style={S.th}>Gaji Diterima</th><th style={S.th}>Kasbon</th><th style={S.th}>Saldo</th><th style={S.th}>Aksi</th></tr></thead><tbody>{fEmpInPer.map((e,i)=>{const rw=e.riwayat?.find(r=>r.periode===empPerSel)||{};const td=rw.gajiBersih||0;return(<tr key={e.id} style={i%2?{background:"rgba(255,255,255,0.03)"}:{}}><td style={S.td}>{i+1}</td><td style={{...S.td,textAlign:"left"}}><div style={{fontWeight:500}}>{e.nama}</div><div style={{fontSize:10,color:"#666"}}>{e.telp}</div></td><td style={{...S.td,textAlign:"left",fontSize:11}}>{e.jabatan}<br/><span style={{...S.badge,background:"rgba(108,99,255,0.15)",color:"#b8b2ff"}}>{e.dep}</span></td><td style={{...S.td,fontWeight:700,color:"#b8b2ff"}}>{fmtRp(td)}</td><td style={{...S.td,fontWeight:600,color:e.kasbon?"#e67e22":"#aaa"}}>{fmtRp(e.kasbon||0)}</td><td style={{...S.td,fontWeight:700,color:(e.saldo||0)>=0?"#27ae60":"#c0392b"}}>{(e.saldo||0)>=0?"+":""}{fmtRp(e.saldo||0)}</td><td style={S.td}><div style={{display:"flex",gap:4,justifyContent:"center",flexWrap:"wrap"}}><button style={{...S.btnMini,borderColor:"#6c63ff",color:"#b8b2ff"}} onClick={()=>setSlipE(e.id)}>{I.slip} Slip</button><KebabMenu items={[{icon:I.edit,label:"Edit",onClick:()=>{setEditE(e.id);setEF({nama:e.nama,jabatan:e.jabatan,dep:e.dep,gaji:e.gaji.toString(),telp:e.telp||"",status:e.status});setShowEF(true)}},{icon:"🚪",label:"Keluarkan dari Periode",danger:true,onClick:()=>removeEmpFromPer(e.id,e.nama)},{icon:I.trash,label:"Hapus Permanen",danger:true,onClick:()=>{if(confirm(`Hapus karyawan "${e.nama}" secara permanen?`))setEmployees(employees.filter(x=>x.id!==e.id))}}]}/></div></td></tr>)})}</tbody></table></div>}
+            <div style={S.card}><div style={S.cardHead}>Karyawan {curCat} · {empPerSel} {empQ&&<span style={{fontWeight:400,color:"#666",fontSize:11}}>· {fEmpInPer.length} hasil</span>}</div>
+              {!fEmpInPer.length?<div style={S.empty}>{empQ?"Tidak ditemukan":"Belum ada data karyawan "+curCat+" di periode ini"}</div>
+              :<div style={S.tableWrap}><table style={S.table}><thead><tr><th style={S.th}>No</th><th style={{...S.th,textAlign:"left"}}>Nama</th><th style={{...S.th,textAlign:"left"}}>Jabatan</th><th style={S.th}>Gaji Diterima</th><th style={S.th}>Kasbon</th><th style={S.th}>Saldo</th><th style={S.th}>Aksi</th></tr></thead><tbody>{fEmpInPer.map((e,i)=>{const rw=e.riwayat?.find(r=>r.periode===empPerSel)||{};const td=rw.gajiBersih||0;return(<tr key={e.id} style={i%2?{background:"rgba(255,255,255,0.03)"}:{}}><td style={S.td}>{i+1}</td><td style={{...S.td,textAlign:"left"}}><div style={{fontWeight:500}}>{e.nama}</div><div style={{fontSize:10,color:"#666"}}>{e.telp}</div></td><td style={{...S.td,textAlign:"left",fontSize:11}}>{e.jabatan}<br/><span style={{...S.badge,background:"rgba(108,99,255,0.15)",color:"#b8b2ff"}}>{e.dep}</span></td><td style={{...S.td,fontWeight:700,color:"#b8b2ff"}}>{fmtRp(td)}</td><td style={{...S.td,fontWeight:600,color:e.kasbon?"#e67e22":"#aaa"}}>{fmtRp(e.kasbon||0)}</td><td style={{...S.td,fontWeight:700,color:(e.saldo||0)>=0?"#27ae60":"#c0392b"}}>{(e.saldo||0)>=0?"+":""}{fmtRp(e.saldo||0)}</td><td style={S.td}><div style={{display:"flex",gap:4,justifyContent:"center",flexWrap:"wrap"}}><button style={{...S.btnMini,borderColor:"#6c63ff",color:"#b8b2ff"}} onClick={()=>setSlipE(e.id)}>{I.slip} Slip</button><KebabMenu items={[{icon:I.edit,label:"Edit",onClick:()=>{setEditE(e.id);setEF({nama:e.nama,jabatan:e.jabatan,dep:e.dep,gaji:e.gaji.toString(),telp:e.telp||"",status:e.status,kategori:e.kategori||"Laki-Laki"});setShowEF(true)}},{icon:"🚪",label:"Keluarkan dari Periode",danger:true,onClick:()=>removeEmpFromPer(e.id,e.nama)},{icon:I.trash,label:"Hapus Permanen",danger:true,onClick:()=>{if(confirm(`Hapus karyawan "${e.nama}" secara permanen?`))setEmployees(employees.filter(x=>x.id!==e.id))}}]}/></div></td></tr>)})}</tbody></table></div>}
             </div>
           </div>);
         })()}
