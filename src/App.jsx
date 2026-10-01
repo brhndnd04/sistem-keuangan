@@ -450,7 +450,7 @@ const[empPer,setEmpPer]=useState("Semua");
       const perEmpCount=(per)=>catEmp.filter(e=>(e.riwayat||[]).some(r=>r.periode===per)).length;
       const openFolder=(per)=>{setEmpPerSel(per);setEmpPer(per);setEmpQ("")};
       const backToFolders=()=>{setEmpPerSel(null);setEmpPer("Semua");setEmpQ("");setShowEF(false)};
-      const tambahPeriode=()=>{const p=prompt("Masukkan periode baru\nContoh: September 2026");if(!p||!p.trim())return;const nm=p.trim();const exists=catEmp.some(e=>(e.riwayat||[]).some(r=>r.periode===nm));if(exists){openFolder(nm);return}const updated=employees.map(e=>{if((e.kategori||"Laki-Laki")!==curCat)return e;const rec={periode:nm,slip:{...mkSlip(),gajiPerhari:e.slip?.gajiPerhari||0,tunjangan:e.slip?.tunjangan||0},gajiBersih:0,harusBayar:0,dibayarkan:0,saldoSblm:0,saldoAkhir:0,tgl:fmtShort(new Date())};return{...e,riwayat:[rec,...(e.riwayat||[])]}});setEmployees(updated);openFolder(nm)};
+      const tambahPeriode=()=>{if(isPerTab&&!catEmp.length){alert(`Belum ada karyawan ${curCat}.\nSilakan tambahkan karyawan terlebih dahulu di Master Karyawan dan pilih kategori "${curCat}".`);return}const p=prompt("Masukkan periode baru\nContoh: September 2026");if(!p||!p.trim())return;const nm=p.trim();const exists=catEmp.some(e=>(e.riwayat||[]).some(r=>r.periode===nm));if(exists){openFolder(nm);return}const updated=employees.map(e=>{if(isPerTab&&(e.kategori||"Laki-Laki")!==curCat)return e;const rec={periode:nm,slip:{...mkSlip(),gajiPerhari:e.slip?.gajiPerhari||0,tunjangan:e.slip?.tunjangan||0},gajiBersih:0,harusBayar:0,dibayarkan:0,saldoSblm:0,saldoAkhir:0,tgl:fmtShort(new Date())};return{...e,riwayat:[rec,...(e.riwayat||[])]}});setEmployees(updated);openFolder(nm)};
       const hapusPeriode=(per)=>{if(!confirm(`Hapus folder "${per}" beserta semua data gaji di periode ini?`))return;setEmployees(employees.map(e=>{if(isPerTab&&(e.kategori||"Laki-Laki")!==curCat)return e;return{...e,riwayat:(e.riwayat||[]).filter(r=>r.periode!==per)}}))};
       const renamePeriode=(per)=>{const nm=prompt("Ubah nama periode:",per);if(!nm||!nm.trim()||nm.trim()===per)return;const newNm=nm.trim();setEmployees(employees.map(e=>({...e,riwayat:(e.riwayat||[]).map(r=>r.periode===per?{...r,periode:newNm}:r)})))};
       const empInPer=empPerSel?catEmp.filter(e=>(e.riwayat||[]).some(r=>r.periode===empPerSel)):[];
@@ -462,10 +462,10 @@ const[empPer,setEmpPer]=useState("Semua");
       return(<div>
         {/* === SUB-TAB SELECTOR (4 tabs) === */}
         <div style={{display:"flex",gap:4,marginBottom:16,background:T.iBg,borderRadius:24,padding:4,border:`1px solid ${T.cb}`,overflowX:"auto"}}>
-          <button style={subTabStyle(empTab==="master")} onClick={()=>{setEmpTab("master");setEmpQ("");setShowEF(false)}}>👥 Master Karyawan</button>
-          <button style={subTabStyle(empTab==="laki")} onClick={()=>{setEmpTab("laki");setEmpQ("");setShowEF(false);setEmpPerSel(null);setEmpPer("Semua")}}>👨 Karyawan Laki-Laki</button>
-          <button style={subTabStyle(empTab==="ibu")} onClick={()=>{setEmpTab("ibu");setEmpQ("");setShowEF(false);setEmpPerSel(null);setEmpPer("Semua")}}>👩 Karyawan Ibu-Ibu</button>
-          <button style={subTabStyle(empTab==="admin")} onClick={()=>{setEmpTab("admin");setEmpQ("");setShowEF(false);setEmpPerSel(null);setEmpPer("Semua")}}>📋 Karyawan Administrasi</button>
+          <button style={subTabStyle(empTab==="master")} onClick={()=>{setEmpTab("master");setEmpQ("");setShowEF(false)}}>Master Karyawan</button>
+          <button style={subTabStyle(empTab==="laki")} onClick={()=>{setEmpTab("laki");setEmpQ("");setShowEF(false);setEmpPerSel(null);setEmpPer("Semua")}}>Karyawan Laki-Laki</button>
+          <button style={subTabStyle(empTab==="ibu")} onClick={()=>{setEmpTab("ibu");setEmpQ("");setShowEF(false);setEmpPerSel(null);setEmpPer("Semua")}}>Karyawan Ibu-Ibu</button>
+          <button style={subTabStyle(empTab==="admin")} onClick={()=>{setEmpTab("admin");setEmpQ("");setShowEF(false);setEmpPerSel(null);setEmpPer("Semua")}}>Karyawan Administrasi</button>
         </div>
 
         {/* === SUB-TAB: MASTER KARYAWAN === */}
@@ -495,7 +495,7 @@ const[empPer,setEmpPer]=useState("Semua");
             <div style={{fontSize:13,color:T.sub}}>Periode gaji {curCat} — pilih folder untuk melihat data</div>
             <button style={S.btnPri} onClick={tambahPeriode}>{I.plus} Tambah Periode</button>
           </div>
-          {!periodeList.length?<div style={{...S.card,textAlign:"center",padding:"40px 20px"}}><div style={{fontSize:40,marginBottom:12}}>📁</div><div style={{fontSize:14,color:T.sub,marginBottom:8}}>Belum ada data periode untuk {curCat}</div><div style={{fontSize:12,color:T.sub}}>Klik "Tambah Periode" untuk membuat folder periode baru.</div></div>
+          {!periodeList.length?<div style={{...S.card,textAlign:"center",padding:"40px 20px"}}><div style={{fontSize:40,marginBottom:12}}>📁</div><div style={{fontSize:14,color:T.sub,marginBottom:8}}>{!catEmp.length?`Belum ada karyawan ${curCat}`:`Belum ada data periode untuk ${curCat}`}</div><div style={{fontSize:12,color:T.sub}}>{!catEmp.length?`Tambahkan karyawan terlebih dahulu di Master Karyawan dan pilih kategori "${curCat}".`:`Klik "Tambah Periode" untuk membuat folder periode baru.`}</div></div>
           :<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:12}}>
             {periodeList.map(per=>{const keluar=perKeluar(per);const dibayar=perDibayar(per);const empC=perEmpCount(per);return(
               <div key={per} onClick={()=>openFolder(per)} style={{background:T.iBg,borderRadius:12,padding:"18px 20px",border:`1px solid ${T.cb}`,cursor:"pointer",transition:"all 0.2s",position:"relative",overflow:"hidden"}}>
@@ -554,7 +554,8 @@ const[empPer,setEmpPer]=useState("Semua");
             <div style={{display:"flex",gap:8,marginBottom:10,flexWrap:"wrap",alignItems:"center"}}>
               <button style={S.btnPri} onClick={addAllEmpToPer} disabled={!empNotInPer.length}>{I.plus} Masukkan Semua ({empNotInPer.length})</button>
               {empNotInPer.length>0&&<select style={{...S.select,minWidth:200,fontSize:12}} value="" onChange={e=>{if(e.target.value)addEmpToPer(e.target.value)}}><option value="">➕ Pilih karyawan {curCat}...</option>{empNotInPer.map(e=>(<option key={e.id} value={e.id}>{e.nama} — {e.jabatan} ({e.dep})</option>))}</select>}
-              {!empNotInPer.length&&<span style={{fontSize:11,color:"#27ae60",fontWeight:500}}>✓ Semua karyawan {curCat} sudah masuk</span>}
+              {!empNotInPer.length&&!empInPer.length&&<span style={{fontSize:11,color:"#e67e22",fontWeight:500}}>⚠ Belum ada karyawan {curCat}. Tambahkan di Master Karyawan.</span>}
+              {!empNotInPer.length&&empInPer.length>0&&<span style={{fontSize:11,color:"#27ae60",fontWeight:500}}>✓ Semua karyawan {curCat} sudah masuk</span>}
             </div>
 
             <div style={{...S.card,paddingTop:10,paddingBottom:10,marginBottom:10,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
