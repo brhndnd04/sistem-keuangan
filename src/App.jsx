@@ -290,7 +290,7 @@ const[umQ,setUmQ]=useState("");
   const tDibayar=useMemo(()=>employees.reduce((s,e)=>(e.riwayat||[]).filter(r=>empPer==="Semua"||r.periode===empPer).reduce((a,r)=>a+(r.dibayarkan||r.totalDiterima||0),s),0),[employees,empPer]);
   const tKeluar=useMemo(()=>employees.reduce((s,e)=>(e.riwayat||[]).filter(r=>empPer==="Semua"||r.periode===empPer).reduce((a,r)=>a+(r.harusBayar||r.gajiBersih||0),s),0),[employees,empPer]);
 
-  const navs=[{id:"dashboard",icon:I.home,lb:L.dashboard},{id:"proyek",icon:I.folder,lb:L.proyek},{id:"karyawan",icon:I.users,lb:L.karyawan},{id:"uangmakan",icon:I.food,lb:L.uangMakan},{id:"pengajuan",icon:I.wallet,lb:L.pengajuan},{id:"pinjaman",icon:I.shuffle,lb:L.pinjaman},{id:"transaksi",icon:I.list,lb:L.transaksi},...(acc.role==="Admin"?[{id:"akun",icon:I.key,lb:L.akun}]:[]),{id:"settings",icon:I.gear,lb:L.settings}];
+  const navs=[{id:"dashboard",icon:I.home,lb:L.dashboard},{id:"proyek",icon:I.folder,lb:L.proyek},{id:"karyawan",icon:I.users,lb:L.karyawan},{id:"pengajuan",icon:I.wallet,lb:L.pengajuan},{id:"pinjaman",icon:I.shuffle,lb:L.pinjaman},{id:"transaksi",icon:I.list,lb:L.transaksi},...(acc.role==="Admin"?[{id:"akun",icon:I.key,lb:L.akun}]:[]),{id:"settings",icon:I.gear,lb:L.settings}];
   const[akunF,setAkunF]=useState({username:"",password:"",nama:"",role:"Bendahara"});const[editAkun,setEditAkun]=useState(null);const[showPass,setShowPass]=useState({});
   const accounts=appData.accounts||ACCTS;
   const setAccounts=(newAccs)=>{const newData={...appData,accounts:newAccs};setAppData(prev=>({...prev,accounts:newAccs}));onSave({projects,employees,loans,transactions:tx,accounts:newAccs});};
@@ -468,6 +468,7 @@ const[umQ,setUmQ]=useState("");
           <button style={subTabStyle(empTab==="laki")} onClick={()=>{setEmpTab("laki");setEmpQ("");setShowEF(false);setEmpPerSel(null);setEmpPer("Semua")}}>Karyawan Laki-Laki</button>
           <button style={subTabStyle(empTab==="ibu")} onClick={()=>{setEmpTab("ibu");setEmpQ("");setShowEF(false);setEmpPerSel(null);setEmpPer("Semua")}}>Karyawan Ibu-Ibu</button>
           <button style={subTabStyle(empTab==="admin")} onClick={()=>{setEmpTab("admin");setEmpQ("");setShowEF(false);setEmpPerSel(null);setEmpPer("Semua")}}>Karyawan Administrasi</button>
+          <button style={subTabStyle(empTab==="uangmakan")} onClick={()=>{setEmpTab("uangmakan");setEmpQ("");setShowEF(false);setEmpPerSel(null);setUmPer(null);setUmQ("")}}>Uang Makan</button>
         </div>
 
         {/* === SUB-TAB: MASTER KARYAWAN === */}
@@ -574,86 +575,84 @@ const[umQ,setUmQ]=useState("");
             </div>
           </div>);
         })()}
-      </div>);
-    })()}
 
-    {tab==="uangmakan"&&(()=>{
-  const umEmp=employees.filter(e=>{const k=e.kategori||"Laki-Laki";return k==="Laki-Laki"||k==="Administrasi"});
-  const umPeriodes=[...new Set(umEmp.flatMap(e=>(e.riwayat||[]).map(r=>r.periode)))].sort((a,b)=>b.localeCompare(a));
-  const getUmForPer=(per)=>{
-    let total=0;let count=0;
-    umEmp.forEach(e=>{
-      (e.riwayat||[]).forEach(r=>{
-        if(r.periode===per&&r.slip&&r.slip.potMakan>0){total+=r.slip.potMakan;count++}
-      });
-    });
-    return{total,count};
-  };
-  const empInPerWithUM=umPer?umEmp.filter(e=>(e.riwayat||[]).some(r=>r.periode===umPer&&r.slip&&r.slip.potMakan>0)):[];
-  const fEmpUM=umQ?empInPerWithUM.filter(e=>e.nama.toLowerCase().includes(umQ.toLowerCase())||e.jabatan.toLowerCase().includes(umQ.toLowerCase())||e.dep.toLowerCase().includes(umQ.toLowerCase())):empInPerWithUM;
-  const totalUM=umPer?empInPerWithUM.reduce((s,e)=>{const r=(e.riwayat||[]).find(r=>r.periode===umPer);return s+(r?.slip?.potMakan||0)},0):0;
+        {/* === SUB-TAB: UANG MAKAN === */}
+        {empTab==="uangmakan"&&(()=>{
+          const umEmp=employees.filter(e=>{const k=e.kategori||"Laki-Laki";return k==="Laki-Laki"||k==="Administrasi"});
+          const umPeriodes=[...new Set(umEmp.flatMap(e=>(e.riwayat||[]).map(r=>r.periode)))].sort((a,b)=>b.localeCompare(a));
+          const getUmForPer=(per)=>{
+            let total=0;let count=0;
+            umEmp.forEach(e=>{(e.riwayat||[]).forEach(r=>{if(r.periode===per&&r.slip&&r.slip.potMakan>0){total+=r.slip.potMakan;count++}});});
+            return{total,count};
+          };
+          const empInPerWithUM=umPer?umEmp.filter(e=>(e.riwayat||[]).some(r=>r.periode===umPer&&r.slip&&r.slip.potMakan>0)):[];
+          const fEmpUM=umQ?empInPerWithUM.filter(e=>e.nama.toLowerCase().includes(umQ.toLowerCase())||e.jabatan.toLowerCase().includes(umQ.toLowerCase())||e.dep.toLowerCase().includes(umQ.toLowerCase())):empInPerWithUM;
+          const totalUM=umPer?empInPerWithUM.reduce((s,e)=>{const r=(e.riwayat||[]).find(r=>r.periode===umPer);return s+(r?.slip?.potMakan||0)},0):0;
 
-  return(<div>
-    {!umPer&&(<div>
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
-        <div style={{fontSize:13,color:T.sub}}>Data potongan uang makan per periode (Laki-Laki & Administrasi)</div>
-      </div>
-      {!umPeriodes.length?<div style={{...S.card,textAlign:"center",padding:"40px 20px"}}><div style={{fontSize:40,marginBottom:12}}>🍽️</div><div style={{fontSize:14,color:T.sub,marginBottom:8}}>Belum ada data uang makan</div><div style={{fontSize:12,color:T.sub}}>Data uang makan akan muncul setelah karyawan Laki-Laki atau Administrasi memiliki potongan makan di slip gaji.</div></div>
-      :<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:12}}>
-        {umPeriodes.map(per=>{const{total,count}=getUmForPer(per);if(!count)return null;return(
-          <div key={per} onClick={()=>{setUmPer(per);setUmQ("")}} style={{background:T.iBg,borderRadius:12,padding:"18px 20px",border:`1px solid ${T.cb}`,cursor:"pointer",transition:"all 0.2s",position:"relative",overflow:"hidden"}}>
-            <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:"linear-gradient(90deg, #e67e22, #f39c12)"}}/>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
-              <div style={{display:"flex",alignItems:"center",gap:10}}>
-                <div style={{fontSize:28,opacity:0.8}}>🍽️</div>
-                <div>
-                  <div style={{fontWeight:700,fontSize:15,color:T.acL}}>{per}</div>
-                  <div style={{fontSize:11,color:T.sub,marginTop:2}}>{count} karyawan dipotong makan</div>
+          return(<div>
+            {!umPer&&(<div>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
+                <div style={{fontSize:13,color:T.sub}}>Data potongan uang makan per periode (Laki-Laki & Administrasi)</div>
+              </div>
+              {!umPeriodes.length?<div style={{...S.card,textAlign:"center",padding:"40px 20px"}}><div style={{fontSize:40,marginBottom:12}}>🍽️</div><div style={{fontSize:14,color:T.sub,marginBottom:8}}>Belum ada data uang makan</div><div style={{fontSize:12,color:T.sub}}>Data uang makan akan muncul setelah karyawan Laki-Laki atau Administrasi memiliki potongan makan di slip gaji.</div></div>
+              :<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:12}}>
+                {umPeriodes.map(per=>{const{total,count}=getUmForPer(per);if(!count)return null;return(
+                  <div key={per} onClick={()=>{setUmPer(per);setUmQ("")}} style={{background:T.iBg,borderRadius:12,padding:"18px 20px",border:`1px solid ${T.cb}`,cursor:"pointer",transition:"all 0.2s",position:"relative",overflow:"hidden"}}>
+                    <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:"linear-gradient(90deg, #e67e22, #f39c12)"}}/>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+                      <div style={{display:"flex",alignItems:"center",gap:10}}>
+                        <div style={{fontSize:28,opacity:0.8}}>🍽️</div>
+                        <div>
+                          <div style={{fontWeight:700,fontSize:15,color:T.acL}}>{per}</div>
+                          <div style={{fontSize:11,color:T.sub,marginTop:2}}>{count} karyawan dipotong makan</div>
+                        </div>
+                      </div>
+                      <div style={{textAlign:"right"}}>
+                        <div style={{fontSize:9,color:T.sub,textTransform:"uppercase",letterSpacing:0.5}}>Total Pot. Makan</div>
+                        <div style={{fontWeight:700,fontSize:14,color:"#e67e22",marginTop:2}}>{fmtRp(total)}</div>
+                      </div>
+                    </div>
+                    <div style={{display:"flex",justifyContent:"flex-end",marginTop:14,paddingTop:10,borderTop:`1px solid ${T.cb}`}}>
+                      <div style={{display:"flex",alignItems:"center",gap:4,fontSize:11,color:T.acL,fontWeight:500}}>Lihat Detail {I.eye}</div>
+                    </div>
+                  </div>
+                )})}
+              </div>}
+            </div>)}
+
+            {umPer&&(<div>
+              <button style={{...S.btnSec,marginBottom:12,display:"flex",alignItems:"center",gap:6}} onClick={()=>{setUmPer(null);setUmQ("")}}>{I.back} Kembali ke Daftar Periode</button>
+              <div style={{...S.card,marginBottom:12,background:`linear-gradient(135deg, ${T.iBg}, ${T.cBg})`,borderLeft:"4px solid #e67e22"}}>
+                <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
+                  <span style={{fontSize:24}}>🍽️</span>
+                  <div>
+                    <div style={{fontWeight:700,fontSize:18,color:T.acL}}>{umPer}</div>
+                    <div style={{fontSize:11,color:T.sub}}>{fEmpUM.length} karyawan dengan potongan makan</div>
+                  </div>
+                </div>
+                <div style={{display:"flex",gap:16,marginTop:10}}>
+                  <div><div style={{fontSize:10,color:T.sub}}>Total Potongan Makan</div><div style={{fontWeight:700,fontSize:15,color:"#e67e22"}}>{fmtRp(totalUM)}</div></div>
                 </div>
               </div>
-              <div style={{textAlign:"right"}}>
-                <div style={{fontSize:9,color:T.sub,textTransform:"uppercase",letterSpacing:0.5}}>Total Pot. Makan</div>
-                <div style={{fontWeight:700,fontSize:14,color:"#e67e22",marginTop:2}}>{fmtRp(total)}</div>
+
+              <div style={{...S.card,paddingTop:10,paddingBottom:10,marginBottom:10,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                <div style={{display:"flex",alignItems:"center",gap:8,flex:1}}>
+                  <span style={{color:"#888"}}>{I.search}</span>
+                  <input style={{...S.input,border:"none",background:"transparent",paddingLeft:0,fontSize:13}} placeholder="Cari nama, jabatan, departemen..." value={umQ} onChange={e=>setUmQ(e.target.value)}/>
+                  {umQ&&<button style={{...S.iconBtn,color:"#666"}} onClick={()=>setUmQ("")}>{I.x}</button>}
+                </div>
               </div>
-            </div>
-            <div style={{display:"flex",justifyContent:"flex-end",marginTop:14,paddingTop:10,borderTop:`1px solid ${T.cb}`}}>
-              <div style={{display:"flex",alignItems:"center",gap:4,fontSize:11,color:T.acL,fontWeight:500}}>Lihat Detail {I.eye}</div>
-            </div>
-          </div>
-        )})}
-      </div>}
-    </div>)}
 
-    {umPer&&(<div>
-      <button style={{...S.btnSec,marginBottom:12,display:"flex",alignItems:"center",gap:6}} onClick={()=>{setUmPer(null);setUmQ("")}}>{I.back} Kembali ke Daftar Periode</button>
-      <div style={{...S.card,marginBottom:12,background:`linear-gradient(135deg, ${T.iBg}, ${T.cBg})`,borderLeft:"4px solid #e67e22"}}>
-        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
-          <span style={{fontSize:24}}>🍽️</span>
-          <div>
-            <div style={{fontWeight:700,fontSize:18,color:T.acL}}>{umPer}</div>
-            <div style={{fontSize:11,color:T.sub}}>{fEmpUM.length} karyawan dengan potongan makan</div>
-          </div>
-        </div>
-        <div style={{display:"flex",gap:16,marginTop:10}}>
-          <div><div style={{fontSize:10,color:T.sub}}>Total Potongan Makan</div><div style={{fontWeight:700,fontSize:15,color:"#e67e22"}}>{fmtRp(totalUM)}</div></div>
-        </div>
-      </div>
+              <div style={S.card}><div style={S.cardHead}>Potongan Uang Makan · {umPer} {umQ&&<span style={{fontWeight:400,color:"#666",fontSize:11}}>· {fEmpUM.length} hasil</span>}</div>
+                {!fEmpUM.length?<div style={S.empty}>{umQ?"Tidak ditemukan":"Tidak ada karyawan dengan potongan makan di periode ini"}</div>
+                :<div style={S.tableWrap}><table style={S.table}><thead><tr><th style={S.th}>No</th><th style={{...S.th,textAlign:"left"}}>Nama</th><th style={{...S.th,textAlign:"left"}}>Jabatan/Dept</th><th style={S.th}>Kategori</th><th style={S.th}>Pot. Makan</th><th style={S.th}>Gaji Bersih</th></tr></thead><tbody>{fEmpUM.map((e,i)=>{const rw=(e.riwayat||[]).find(r=>r.periode===umPer);const pm=rw?.slip?.potMakan||0;const gb=rw?.gajiBersih||0;return(<tr key={e.id} style={i%2?{background:"rgba(255,255,255,0.03)"}:{}}><td style={S.td}>{i+1}</td><td style={{...S.td,textAlign:"left"}}><div style={{fontWeight:500}}>{e.nama}</div><div style={{fontSize:10,color:"#666"}}>{e.telp}</div></td><td style={{...S.td,textAlign:"left",fontSize:11}}>{e.jabatan}<br/><span style={{...S.badge,background:"rgba(108,99,255,0.15)",color:"#b8b2ff"}}>{e.dep}</span></td><td style={S.td}><span style={{...S.badge,background:(e.kategori||"Laki-Laki")==="Administrasi"?"rgba(52,152,219,0.15)":"rgba(46,204,113,0.15)",color:(e.kategori||"Laki-Laki")==="Administrasi"?"#3498db":"#2ecc71"}}>{e.kategori||"Laki-Laki"}</span></td><td style={{...S.td,fontWeight:700,color:"#e67e22"}}>{fmtRp(pm)}</td><td style={{...S.td,fontWeight:600,color:"#b8b2ff"}}>{fmtRp(gb)}</td></tr>)})}</tbody></table></div>}
+              </div>
+            </div>)}
+          </div>);
+        })()}
 
-      <div style={{...S.card,paddingTop:10,paddingBottom:10,marginBottom:10,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-        <div style={{display:"flex",alignItems:"center",gap:8,flex:1}}>
-          <span style={{color:"#888"}}>{I.search}</span>
-          <input style={{...S.input,border:"none",background:"transparent",paddingLeft:0,fontSize:13}} placeholder="Cari nama, jabatan, departemen..." value={umQ} onChange={e=>setUmQ(e.target.value)}/>
-          {umQ&&<button style={{...S.iconBtn,color:"#666"}} onClick={()=>setUmQ("")}>{I.x}</button>}
-        </div>
-      </div>
-
-      <div style={S.card}><div style={S.cardHead}>Potongan Uang Makan · {umPer} {umQ&&<span style={{fontWeight:400,color:"#666",fontSize:11}}>· {fEmpUM.length} hasil</span>}</div>
-        {!fEmpUM.length?<div style={S.empty}>{umQ?"Tidak ditemukan":"Tidak ada karyawan dengan potongan makan di periode ini"}</div>
-        :<div style={S.tableWrap}><table style={S.table}><thead><tr><th style={S.th}>No</th><th style={{...S.th,textAlign:"left"}}>Nama</th><th style={{...S.th,textAlign:"left"}}>Jabatan/Dept</th><th style={S.th}>Kategori</th><th style={S.th}>Pot. Makan</th><th style={S.th}>Gaji Bersih</th></tr></thead><tbody>{fEmpUM.map((e,i)=>{const rw=(e.riwayat||[]).find(r=>r.periode===umPer);const pm=rw?.slip?.potMakan||0;const gb=rw?.gajiBersih||0;return(<tr key={e.id} style={i%2?{background:"rgba(255,255,255,0.03)"}:{}}><td style={S.td}>{i+1}</td><td style={{...S.td,textAlign:"left"}}><div style={{fontWeight:500}}>{e.nama}</div><div style={{fontSize:10,color:"#666"}}>{e.telp}</div></td><td style={{...S.td,textAlign:"left",fontSize:11}}>{e.jabatan}<br/><span style={{...S.badge,background:"rgba(108,99,255,0.15)",color:"#b8b2ff"}}>{e.dep}</span></td><td style={S.td}><span style={{...S.badge,background:(e.kategori||"Laki-Laki")==="Administrasi"?"rgba(52,152,219,0.15)":"rgba(46,204,113,0.15)",color:(e.kategori||"Laki-Laki")==="Administrasi"?"#3498db":"#2ecc71"}}>{e.kategori||"Laki-Laki"}</span></td><td style={{...S.td,fontWeight:700,color:"#e67e22"}}>{fmtRp(pm)}</td><td style={{...S.td,fontWeight:600,color:"#b8b2ff"}}>{fmtRp(gb)}</td></tr>)})}</tbody></table></div>}
-      </div>
-    </div>)}
-  </div>);
-})()}
+      </div>);
+    })()}
 
     {tab==="pengajuan"&&(()=>{
       // Helper: calc saldo for a project
