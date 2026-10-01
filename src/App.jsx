@@ -251,6 +251,7 @@ function MainApp({account:acc,onLogout,appData,setAppData,onSave}){
   const[empQ,setEmpQ]=useState("");
 const[empPer,setEmpPer]=useState("Semua");
   const[empPerSel,setEmpPerSel]=useState(null);
+  const[empTab,setEmpTab]=useState("karyawan");
   const[pengajuan,setPengajuan]=useState(appData.pengajuan||[]);
   const[pgSel,setPgSel]=useState(null);const[pgNF,setPgNF]=useState("");const[editPgId,setEditPgId]=useState(null);
   const[pgF,setPgF]=useState({tipe:"debit",jumlah:"",ket:""});const[editEntId,setEditEntId]=useState(null);const[editEntSaldo,setEditEntSaldo]=useState("");
@@ -450,15 +451,45 @@ const[empPer,setEmpPer]=useState("Semua");
       const renamePeriode=(per)=>{const nm=prompt("Ubah nama periode:",per);if(!nm||!nm.trim()||nm.trim()===per)return;const newNm=nm.trim();setEmployees(employees.map(e=>({...e,riwayat:(e.riwayat||[]).map(r=>r.periode===per?{...r,periode:newNm}:r)})))};
       const empInPer=empPerSel?employees.filter(e=>(e.riwayat||[]).some(r=>r.periode===empPerSel)):[];
       const fEmpInPer=empQ?empInPer.filter(e=>e.nama.toLowerCase().includes(empQ.toLowerCase())||e.jabatan.toLowerCase().includes(empQ.toLowerCase())||e.dep.toLowerCase().includes(empQ.toLowerCase())):empInPer;
+      const fEmpAll=empQ?employees.filter(e=>e.nama.toLowerCase().includes(empQ.toLowerCase())||e.jabatan.toLowerCase().includes(empQ.toLowerCase())||e.dep.toLowerCase().includes(empQ.toLowerCase())):employees;
 
-      if(!empPerSel){
-        /* === FOLDER LIST VIEW === */
-        return(<div>
+      const subTabStyle=(active)=>({padding:"8px 20px",borderRadius:20,border:"none",cursor:"pointer",fontSize:13,fontWeight:600,transition:"all 0.2s",background:active?"linear-gradient(135deg,#6c63ff,#48c6ef)":"transparent",color:active?"#fff":T.sub,boxShadow:active?"0 2px 8px rgba(108,99,255,0.3)":"none"});
+
+      return(<div>
+        {/* === SUB-TAB SELECTOR === */}
+        <div style={{display:"flex",gap:4,marginBottom:16,background:T.iBg,borderRadius:24,padding:4,border:`1px solid ${T.cb}`}}>
+          <button style={subTabStyle(empTab==="karyawan")} onClick={()=>{setEmpTab("karyawan");setEmpQ("");setShowEF(false)}}>👥 Karyawan</button>
+          <button style={subTabStyle(empTab==="periode")} onClick={()=>{setEmpTab("periode");setEmpQ("");setShowEF(false);setEmpPerSel(null);setEmpPer("Semua")}}>📁 Periode Gaji</button>
+        </div>
+
+        {/* === SUB-TAB: KARYAWAN (Master List) === */}
+        {empTab==="karyawan"&&(<div>
+          <div style={{...S.card,paddingTop:10,paddingBottom:10,marginBottom:10,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+            <div style={{display:"flex",alignItems:"center",gap:8,flex:1}}>
+              <span style={{color:"#888"}}>{I.search}</span>
+              <input style={{...S.input,border:"none",background:"transparent",paddingLeft:0,fontSize:13}} placeholder="Cari nama, jabatan, departemen..." value={empQ} onChange={e=>setEmpQ(e.target.value)}/>
+              {empQ&&<button style={{...S.iconBtn,color:"#666"}} onClick={()=>setEmpQ("")}>{I.x}</button>}
+            </div>
+          </div>
+
+          <div style={{marginBottom:12}}>
+            {!showEF&&<button style={S.btnPri} onClick={()=>{setShowEF(true);setEditE(null);setEF({nama:"",jabatan:"",dep:"",gaji:"",telp:"",status:"Aktif"})}}>{I.plus} Tambah Karyawan Baru</button>}
+            {showEF&&<div style={S.card}><div style={S.cardHead}>{editE?"Edit":"Tambah"} Karyawan</div><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))",gap:8}}>{[["Nama","nama"],["Jabatan","jabatan"],["Dept","dep"],["Gaji","gaji"],["Telp","telp"]].map(([l,k])=>(<div key={k}><label style={S.lbl}>{l}</label><input style={S.input} type={k==="gaji"?"number":"text"} value={eF[k]} onChange={e=>setEF({...eF,[k]:e.target.value})}/></div>))}<div><label style={S.lbl}>Status</label><select style={S.select} value={eF.status} onChange={e=>setEF({...eF,status:e.target.value})}><option>Aktif</option><option>Nonaktif</option><option>Cuti</option></select></div></div><div style={{display:"flex",gap:6,marginTop:12}}>{editE?<button style={S.btnPri} onClick={()=>{setEmployees(employees.map(e=>e.id===editE?{...e,...eF,gaji:NM(eF.gaji)}:e));setEditE(null);setShowEF(false)}}>Simpan</button>:<button style={S.btnPri} onClick={()=>{if(!eF.nama||!eF.gaji)return;setEmployees([...employees,{id:uid(),...eF,gaji:NM(eF.gaji),slip:mkSlip(),saldo:0,kasbon:0,logKasbon:[],riwayat:[]}]);setEF({nama:"",jabatan:"",dep:"",gaji:"",telp:"",status:"Aktif"});setShowEF(false)}}>{I.plus} Simpan</button>}<button style={S.btnSec} onClick={()=>{setShowEF(false);setEditE(null)}}>Batal</button></div></div>}
+          </div>
+
+          <div style={S.card}><div style={S.cardHead}>Semua Karyawan ({fEmpAll.length}{empQ?` dari ${employees.length}`:""})</div>
+            {!fEmpAll.length?<div style={S.empty}>{empQ?"Tidak ditemukan":"Belum ada karyawan"}</div>
+            :<div style={S.tableWrap}><table style={S.table}><thead><tr><th style={S.th}>No</th><th style={{...S.th,textAlign:"left"}}>Nama</th><th style={{...S.th,textAlign:"left"}}>Jabatan/Dept</th><th style={S.th}>Gaji Pokok</th><th style={S.th}>Status</th><th style={S.th}>Aksi</th></tr></thead><tbody>{fEmpAll.map((e,i)=>(<tr key={e.id} style={i%2?{background:"rgba(255,255,255,0.03)"}:{}}><td style={S.td}>{i+1}</td><td style={{...S.td,textAlign:"left"}}><div style={{fontWeight:500}}>{e.nama}</div><div style={{fontSize:10,color:"#666"}}>{e.telp}</div></td><td style={{...S.td,textAlign:"left",fontSize:11}}>{e.jabatan}<br/><span style={{...S.badge,background:"rgba(108,99,255,0.15)",color:"#b8b2ff"}}>{e.dep}</span></td><td style={{...S.td,fontWeight:600}}>{fmtRp(e.gaji)}</td><td style={S.td}><span style={{...S.badge,background:e.status==="Aktif"?"rgba(39,174,96,0.15)":"rgba(192,57,43,0.15)",color:e.status==="Aktif"?"#27ae60":"#c0392b"}}>{e.status}</span></td><td style={S.td}><div style={{display:"flex",gap:4,justifyContent:"center"}}><KebabMenu items={[{icon:I.edit,label:"Edit",onClick:()=>{setEditE(e.id);setEF({nama:e.nama,jabatan:e.jabatan,dep:e.dep,gaji:e.gaji.toString(),telp:e.telp||"",status:e.status});setShowEF(true)}},{icon:I.trash,label:"Hapus",danger:true,onClick:()=>{if(confirm(`Hapus karyawan "${e.nama}"?`))setEmployees(employees.filter(x=>x.id!==e.id))}}]}/></div></td></tr>))}</tbody></table></div>}
+          </div>
+        </div>)}
+
+        {/* === SUB-TAB: PERIODE GAJI === */}
+        {empTab==="periode"&&!empPerSel&&(<div>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
-            <div style={{fontSize:13,color:T.sub}}>Pilih periode untuk melihat data karyawan</div>
+            <div style={{fontSize:13,color:T.sub}}>Pilih periode untuk melihat data gaji karyawan</div>
             <button style={S.btnPri} onClick={tambahPeriode}>{I.plus} Tambah Periode</button>
           </div>
-          {!periodeList.length?<div style={{...S.card,textAlign:"center",padding:"40px 20px"}}><div style={{fontSize:40,marginBottom:12}}>📁</div><div style={{fontSize:14,color:T.sub,marginBottom:8}}>Belum ada data periode</div><div style={{fontSize:12,color:T.sub}}>Klik "Tambah Periode" untuk membuat folder periode baru, atau buat slip gaji karyawan terlebih dahulu.</div></div>
+          {!periodeList.length?<div style={{...S.card,textAlign:"center",padding:"40px 20px"}}><div style={{fontSize:40,marginBottom:12}}>📁</div><div style={{fontSize:14,color:T.sub,marginBottom:8}}>Belum ada data periode</div><div style={{fontSize:12,color:T.sub}}>Klik "Tambah Periode" untuk membuat folder periode baru.</div></div>
           :<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:12}}>
             {periodeList.map(per=>{const keluar=perKeluar(per);const dibayar=perDibayar(per);const empC=perEmpCount(per);return(
               <div key={per} onClick={()=>openFolder(per)} style={{background:T.iBg,borderRadius:12,padding:"18px 20px",border:`1px solid ${T.cb}`,cursor:"pointer",transition:"all 0.2s",position:"relative",overflow:"hidden"}}>
@@ -486,56 +517,43 @@ const[empPer,setEmpPer]=useState("Semua");
               </div>
             )})}
           </div>}
+        </div>)}
 
-          {/* Tambah Karyawan baru (global) */}
-          <div style={{marginTop:16}}>
-            {!showEF&&<button style={S.btnSec} onClick={()=>{setShowEF(true);setEditE(null);setEF({nama:"",jabatan:"",dep:"",gaji:"",telp:"",status:"Aktif"})}}>{I.plus} Tambah Karyawan Baru</button>}
-            {showEF&&<div style={S.card}><div style={S.cardHead}>{editE?"Edit":"Tambah"} Karyawan</div><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))",gap:8}}>{[["Nama","nama"],["Jabatan","jabatan"],["Dept","dep"],["Gaji","gaji"],["Telp","telp"]].map(([l,k])=>(<div key={k}><label style={S.lbl}>{l}</label><input style={S.input} type={k==="gaji"?"number":"text"} value={eF[k]} onChange={e=>setEF({...eF,[k]:e.target.value})}/></div>))}<div><label style={S.lbl}>Status</label><select style={S.select} value={eF.status} onChange={e=>setEF({...eF,status:e.target.value})}><option>Aktif</option><option>Nonaktif</option><option>Cuti</option></select></div></div><div style={{display:"flex",gap:6,marginTop:12}}>{editE?<button style={S.btnPri} onClick={()=>{setEmployees(employees.map(e=>e.id===editE?{...e,...eF,gaji:NM(eF.gaji)}:e));setEditE(null);setShowEF(false)}}>Simpan</button>:<button style={S.btnPri} onClick={()=>{if(!eF.nama||!eF.gaji)return;setEmployees([...employees,{id:uid(),...eF,gaji:NM(eF.gaji),slip:mkSlip(),saldo:0,kasbon:0,logKasbon:[],riwayat:[]}]);setEF({nama:"",jabatan:"",dep:"",gaji:"",telp:"",status:"Aktif"});setShowEF(false)}}>{I.plus} Simpan</button>}<button style={S.btnSec} onClick={()=>{setShowEF(false);setEditE(null)}}>Batal</button></div></div>}
-          </div>
-
-          {/* Daftar semua karyawan (ringkasan) */}
-          <div style={{...S.card,marginTop:12}}><div style={S.cardHead}>Semua Karyawan ({employees.length})</div>
-            {!employees.length?<div style={S.empty}>Belum ada karyawan</div>
-            :<div style={S.tableWrap}><table style={S.table}><thead><tr><th style={S.th}>No</th><th style={{...S.th,textAlign:"left"}}>Nama</th><th style={{...S.th,textAlign:"left"}}>Jabatan/Dept</th><th style={S.th}>Gaji Pokok</th><th style={S.th}>Status</th><th style={S.th}>Aksi</th></tr></thead><tbody>{employees.map((e,i)=>(<tr key={e.id} style={i%2?{background:"rgba(255,255,255,0.03)"}:{}}><td style={S.td}>{i+1}</td><td style={{...S.td,textAlign:"left"}}><div style={{fontWeight:500}}>{e.nama}</div><div style={{fontSize:10,color:"#666"}}>{e.telp}</div></td><td style={{...S.td,textAlign:"left",fontSize:11}}>{e.jabatan}<br/><span style={{...S.badge,background:"rgba(108,99,255,0.15)",color:"#b8b2ff"}}>{e.dep}</span></td><td style={{...S.td,fontWeight:600}}>{fmtRp(e.gaji)}</td><td style={S.td}><span style={{...S.badge,background:e.status==="Aktif"?"rgba(39,174,96,0.15)":"rgba(192,57,43,0.15)",color:e.status==="Aktif"?"#27ae60":"#c0392b"}}>{e.status}</span></td><td style={S.td}><div style={{display:"flex",gap:4,justifyContent:"center"}}><KebabMenu items={[{icon:I.edit,label:"Edit",onClick:()=>{setEditE(e.id);setEF({nama:e.nama,jabatan:e.jabatan,dep:e.dep,gaji:e.gaji.toString(),telp:e.telp||"",status:e.status});setShowEF(true)}},{icon:I.trash,label:"Hapus",danger:true,onClick:()=>{if(confirm(`Hapus karyawan "${e.nama}"?`))setEmployees(employees.filter(x=>x.id!==e.id))}}]}/></div></td></tr>))}</tbody></table></div>}
-          </div>
-        </div>);
-      }
-
-      /* === INSIDE PERIOD FOLDER VIEW === */
-      const selKeluar=perKeluar(empPerSel);
-      const selDibayar=perDibayar(empPerSel);
-      return(<div>
-        <button style={{...S.btnSec,marginBottom:12,display:"flex",alignItems:"center",gap:6}} onClick={backToFolders}>{I.back} Kembali ke Daftar Periode</button>
-        <div style={{...S.card,marginBottom:12,background:`linear-gradient(135deg, ${T.iBg}, ${T.cBg})`,borderLeft:"4px solid #6c63ff"}}>
-          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
-            <span style={{fontSize:24}}>📁</span>
-            <div>
-              <div style={{fontWeight:700,fontSize:18,color:T.acL}}>{empPerSel}</div>
-              <div style={{fontSize:11,color:T.sub}}>{fEmpInPer.length} karyawan dalam periode ini</div>
+        {/* === INSIDE PERIOD FOLDER VIEW === */}
+        {empTab==="periode"&&empPerSel&&(()=>{
+          const selKeluar=perKeluar(empPerSel);
+          const selDibayar=perDibayar(empPerSel);
+          return(<div>
+            <button style={{...S.btnSec,marginBottom:12,display:"flex",alignItems:"center",gap:6}} onClick={backToFolders}>{I.back} Kembali ke Daftar Periode</button>
+            <div style={{...S.card,marginBottom:12,background:`linear-gradient(135deg, ${T.iBg}, ${T.cBg})`,borderLeft:"4px solid #6c63ff"}}>
+              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
+                <span style={{fontSize:24}}>📁</span>
+                <div>
+                  <div style={{fontWeight:700,fontSize:18,color:T.acL}}>{empPerSel}</div>
+                  <div style={{fontSize:11,color:T.sub}}>{fEmpInPer.length} karyawan dalam periode ini</div>
+                </div>
+              </div>
+              <div style={{display:"flex",gap:16,marginTop:10}}>
+                <div><div style={{fontSize:10,color:T.sub}}>Saldo Keluar</div><div style={{fontWeight:700,fontSize:15,color:"#c0392b"}}>{fmtRp(selKeluar)}</div></div>
+                <div style={{width:1,background:T.cb}}/>
+                <div><div style={{fontSize:10,color:T.sub}}>Dibayarkan</div><div style={{fontWeight:700,fontSize:15,color:"#2980b9"}}>{fmtRp(selDibayar)}</div></div>
+              </div>
             </div>
-          </div>
-          <div style={{display:"flex",gap:16,marginTop:10}}>
-            <div><div style={{fontSize:10,color:T.sub}}>Saldo Keluar</div><div style={{fontWeight:700,fontSize:15,color:"#c0392b"}}>{fmtRp(selKeluar)}</div></div>
-            <div style={{width:1,background:T.cb}}/>
-            <div><div style={{fontSize:10,color:T.sub}}>Dibayarkan</div><div style={{fontWeight:700,fontSize:15,color:"#2980b9"}}>{fmtRp(selDibayar)}</div></div>
-          </div>
-        </div>
 
-        <div style={{...S.card,paddingTop:10,paddingBottom:10,marginBottom:10,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-          <div style={{display:"flex",alignItems:"center",gap:8}}>
-            <span style={{color:"#888"}}>{I.search}</span>
-            <input style={{...S.input,border:"none",background:"transparent",paddingLeft:0,fontSize:13}} placeholder="Cari nama, jabatan, departemen..." value={empQ} onChange={e=>setEmpQ(e.target.value)}/>
-            {empQ&&<button style={{...S.iconBtn,color:"#666"}} onClick={()=>setEmpQ("")}>{I.x}</button>}
-          </div>
-        </div>
+            <div style={{...S.card,paddingTop:10,paddingBottom:10,marginBottom:10,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,flex:1}}>
+                <span style={{color:"#888"}}>{I.search}</span>
+                <input style={{...S.input,border:"none",background:"transparent",paddingLeft:0,fontSize:13}} placeholder="Cari nama, jabatan, departemen..." value={empQ} onChange={e=>setEmpQ(e.target.value)}/>
+                {empQ&&<button style={{...S.iconBtn,color:"#666"}} onClick={()=>setEmpQ("")}>{I.x}</button>}
+              </div>
+            </div>
 
-        {!showEF&&<button style={{...S.btnPri,marginBottom:10}} onClick={()=>{setShowEF(true);setEditE(null);setEF({nama:"",jabatan:"",dep:"",gaji:"",telp:"",status:"Aktif"})}}>{I.plus} Tambah Karyawan</button>}
-        {showEF&&<div style={S.card}><div style={S.cardHead}>{editE?"Edit":"Tambah"} Karyawan</div><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))",gap:8}}>{[["Nama","nama"],["Jabatan","jabatan"],["Dept","dep"],["Gaji","gaji"],["Telp","telp"]].map(([l,k])=>(<div key={k}><label style={S.lbl}>{l}</label><input style={S.input} type={k==="gaji"?"number":"text"} value={eF[k]} onChange={e=>setEF({...eF,[k]:e.target.value})}/></div>))}<div><label style={S.lbl}>Status</label><select style={S.select} value={eF.status} onChange={e=>setEF({...eF,status:e.target.value})}><option>Aktif</option><option>Nonaktif</option><option>Cuti</option></select></div></div><div style={{display:"flex",gap:6,marginTop:12}}>{editE?<button style={S.btnPri} onClick={()=>{setEmployees(employees.map(e=>e.id===editE?{...e,...eF,gaji:NM(eF.gaji)}:e));setEditE(null);setShowEF(false)}}>Simpan</button>:<button style={S.btnPri} onClick={()=>{if(!eF.nama||!eF.gaji)return;setEmployees([...employees,{id:uid(),...eF,gaji:NM(eF.gaji),slip:mkSlip(),saldo:0,kasbon:0,logKasbon:[],riwayat:[]}]);setEF({nama:"",jabatan:"",dep:"",gaji:"",telp:"",status:"Aktif"});setShowEF(false)}}>{I.plus} Simpan</button>}<button style={S.btnSec} onClick={()=>{setShowEF(false);setEditE(null)}}>Batal</button></div></div>}
-
-        <div style={S.card}><div style={S.cardHead}>Karyawan · {empPerSel} {empQ&&<span style={{fontWeight:400,color:"#666",fontSize:11}}>· {fEmpInPer.length} hasil</span>}</div>
-          {!fEmpInPer.length?<div style={S.empty}>{empQ?"Tidak ditemukan":"Belum ada data karyawan di periode ini"}</div>
-          :<div style={S.tableWrap}><table style={S.table}><thead><tr><th style={S.th}>No</th><th style={{...S.th,textAlign:"left"}}>Nama</th><th style={{...S.th,textAlign:"left"}}>Jabatan</th><th style={S.th}>Gaji Diterima</th><th style={S.th}>Kasbon</th><th style={S.th}>Saldo</th><th style={S.th}>Aksi</th></tr></thead><tbody>{fEmpInPer.map((e,i)=>{const rw=e.riwayat?.find(r=>r.periode===empPerSel)||{};const td=rw.gajiBersih||0;return(<tr key={e.id} style={i%2?{background:"rgba(255,255,255,0.03)"}:{}}><td style={S.td}>{i+1}</td><td style={{...S.td,textAlign:"left"}}><div style={{fontWeight:500}}>{e.nama}</div><div style={{fontSize:10,color:"#666"}}>{e.telp}</div></td><td style={{...S.td,textAlign:"left",fontSize:11}}>{e.jabatan}<br/><span style={{...S.badge,background:"rgba(108,99,255,0.15)",color:"#b8b2ff"}}>{e.dep}</span></td><td style={{...S.td,fontWeight:700,color:"#b8b2ff"}}>{fmtRp(td)}</td><td style={{...S.td,fontWeight:600,color:e.kasbon?"#e67e22":"#aaa"}}>{fmtRp(e.kasbon||0)}</td><td style={{...S.td,fontWeight:700,color:(e.saldo||0)>=0?"#27ae60":"#c0392b"}}>{(e.saldo||0)>=0?"+":""}{fmtRp(e.saldo||0)}</td><td style={S.td}><div style={{display:"flex",gap:4,justifyContent:"center",flexWrap:"wrap"}}><button style={{...S.btnMini,borderColor:"#6c63ff",color:"#b8b2ff"}} onClick={()=>setSlipE(e.id)}>{I.slip} Slip</button><KebabMenu items={[{icon:I.edit,label:"Edit",onClick:()=>{setEditE(e.id);setEF({nama:e.nama,jabatan:e.jabatan,dep:e.dep,gaji:e.gaji.toString(),telp:e.telp||"",status:e.status});setShowEF(true)}},{icon:I.trash,label:"Hapus",danger:true,onClick:()=>{if(confirm(`Hapus karyawan "${e.nama}"?`))setEmployees(employees.filter(x=>x.id!==e.id))}}]}/></div></td></tr>)})}</tbody></table></div>}
-        </div>
+            <div style={S.card}><div style={S.cardHead}>Karyawan · {empPerSel} {empQ&&<span style={{fontWeight:400,color:"#666",fontSize:11}}>· {fEmpInPer.length} hasil</span>}</div>
+              {!fEmpInPer.length?<div style={S.empty}>{empQ?"Tidak ditemukan":"Belum ada data karyawan di periode ini"}</div>
+              :<div style={S.tableWrap}><table style={S.table}><thead><tr><th style={S.th}>No</th><th style={{...S.th,textAlign:"left"}}>Nama</th><th style={{...S.th,textAlign:"left"}}>Jabatan</th><th style={S.th}>Gaji Diterima</th><th style={S.th}>Kasbon</th><th style={S.th}>Saldo</th><th style={S.th}>Aksi</th></tr></thead><tbody>{fEmpInPer.map((e,i)=>{const rw=e.riwayat?.find(r=>r.periode===empPerSel)||{};const td=rw.gajiBersih||0;return(<tr key={e.id} style={i%2?{background:"rgba(255,255,255,0.03)"}:{}}><td style={S.td}>{i+1}</td><td style={{...S.td,textAlign:"left"}}><div style={{fontWeight:500}}>{e.nama}</div><div style={{fontSize:10,color:"#666"}}>{e.telp}</div></td><td style={{...S.td,textAlign:"left",fontSize:11}}>{e.jabatan}<br/><span style={{...S.badge,background:"rgba(108,99,255,0.15)",color:"#b8b2ff"}}>{e.dep}</span></td><td style={{...S.td,fontWeight:700,color:"#b8b2ff"}}>{fmtRp(td)}</td><td style={{...S.td,fontWeight:600,color:e.kasbon?"#e67e22":"#aaa"}}>{fmtRp(e.kasbon||0)}</td><td style={{...S.td,fontWeight:700,color:(e.saldo||0)>=0?"#27ae60":"#c0392b"}}>{(e.saldo||0)>=0?"+":""}{fmtRp(e.saldo||0)}</td><td style={S.td}><div style={{display:"flex",gap:4,justifyContent:"center",flexWrap:"wrap"}}><button style={{...S.btnMini,borderColor:"#6c63ff",color:"#b8b2ff"}} onClick={()=>setSlipE(e.id)}>{I.slip} Slip</button><KebabMenu items={[{icon:I.edit,label:"Edit",onClick:()=>{setEditE(e.id);setEF({nama:e.nama,jabatan:e.jabatan,dep:e.dep,gaji:e.gaji.toString(),telp:e.telp||"",status:e.status});setShowEF(true)}},{icon:I.trash,label:"Hapus",danger:true,onClick:()=>{if(confirm(`Hapus karyawan "${e.nama}"?`))setEmployees(employees.filter(x=>x.id!==e.id))}}]}/></div></td></tr>)})}</tbody></table></div>}
+            </div>
+          </div>);
+        })()}
       </div>);
     })()}
 
