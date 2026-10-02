@@ -140,6 +140,76 @@ ${p.pencairan.map(pc=>{const ic=pc.status!=="Belum Cair";if(ic)run-=pc.jumlah;co
 <script>window.onload=function(){window.print()}<\/script></body></html>`;
 const w=window.open("","_blank");if(w){w.document.write(html);w.document.close();}}
 
+function printLaporan(per,catLabel,empList){
+const now=new Date();
+const rows=empList.map((e,i)=>{
+const rw=(e.riwayat||[]).find(r=>r.periode===per);
+const s=rw?.slip||{};
+const c=calcSlip({masukHari:s.masukHari||0,gajiPerhari:s.gajiPerhari||0,lembur:s.lembur||0,tunjangan:s.tunjangan||0,bonus:s.bonus||0,potKasbon:s.potKasbon||0,potMakan:s.potMakan||0});
+return{no:i+1,nama:e.nama,jabatan:e.jabatan||e.dep||"-",ihsan:s.gajiPerhari||0,masuk:s.masukHari||0,lembur:s.lembur||0,bonus:s.bonus||0,tunjangan:s.tunjangan||0,potMakan:s.potMakan||0,potKasbon:s.potKasbon||0,kotor:c.totalPendapatan,bersih:c.gajiBersih};
+});
+const totals=rows.reduce((t,r)=>({lembur:t.lembur+r.lembur,bonus:t.bonus+r.bonus,tunjangan:t.tunjangan+r.tunjangan,potMakan:t.potMakan+r.potMakan,potKasbon:t.potKasbon+r.potKasbon,kotor:t.kotor+r.kotor,bersih:t.bersih+r.bersih}),{lembur:0,bonus:0,tunjangan:0,potMakan:0,potKasbon:0,kotor:0,bersih:0});
+const html=`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Laporan-${catLabel}-${per}</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Plus Jakarta Sans',sans-serif;color:#1a1a1a;padding:10mm 12mm;font-size:10px}
+@page{size:A4 landscape;margin:8mm 10mm}
+h2{font-size:14px;font-weight:700;text-align:center;margin:0}
+h3{font-size:11px;font-weight:600;text-align:center;margin:2px 0 10px}
+.meta{margin-bottom:10px;font-size:10px}
+.meta td{padding:2px 6px 2px 0}
+.meta .lb{font-weight:700;width:60px}
+table.main{width:100%;border-collapse:collapse;font-size:9px}
+table.main th{background:#d6eaf8;color:#1a3c34;font-weight:700;padding:5px 4px;border:1px solid #999;text-align:center;white-space:nowrap}
+table.main td{padding:4px 5px;border:1px solid #bbb;white-space:nowrap}
+table.main .r{text-align:right}
+table.main .c{text-align:center}
+table.main .l{text-align:left}
+table.main tr:nth-child(even){background:#f7fbff}
+.tot td{background:#d6eaf8!important;font-weight:700}
+.sign-row{display:flex;justify-content:space-between;margin-top:24px;font-size:9px}
+.sign-box{text-align:center;min-width:130px}
+.sign-box .line{margin-top:40px;border-bottom:1px solid #333;width:140px;display:inline-block}
+.sign-box .nm{font-weight:700;margin-top:3px;font-size:9.5px}
+.place{text-align:right;margin-top:16px;font-size:10px}
+@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+</style></head><body>
+<h2>DEPARTEMEN RUMAH TANGGA</h2>
+<h3>DAFTAR IHSAN KARYAWAN HARIAN DRT</h3>
+<table class="meta"><tr><td class="lb">PRIODE</td><td>: ${per}</td></tr><tr><td class="lb">PEKAN</td><td>:</td></tr></table>
+<table class="main">
+<thead>
+<tr>
+<th rowspan="2">NO</th><th rowspan="2">NAMA</th><th rowspan="2">JABATAN</th><th rowspan="2">IHSAN<br>PERHARI</th><th rowspan="2">TOTAL MASUK</th>
+<th colspan="3">PENDAPATAN</th><th colspan="2">POTONGAN</th><th colspan="2">TOTAL</th>
+</tr>
+<tr><th>LEMBUR</th><th>BONUS</th><th>TUNJANGAN</th><th>MAKAN</th><th>KASBON</th><th>KOTOR</th><th>BERSIH</th></tr>
+</thead>
+<tbody>
+${rows.map(r=>`<tr>
+<td class="c">${r.no}</td><td class="l">${r.nama}</td><td class="l">${r.jabatan}</td>
+<td class="r">${fmtRp(r.ihsan)}</td><td class="c">${r.masuk} Hari</td>
+<td class="r">${fmtRp(r.lembur)}</td><td class="r">${fmtRp(r.bonus)}</td><td class="r">${fmtRp(r.tunjangan)}</td>
+<td class="r">${fmtRp(r.potMakan)}</td><td class="r">${fmtRp(r.potKasbon)}</td>
+<td class="r">${fmtRp(r.kotor)}</td><td class="r" style="font-weight:600">${fmtRp(r.bersih)}</td>
+</tr>`).join("")}
+<tr class="tot"><td colspan="5" class="r">TOTAL KESELURUHAN</td>
+<td class="r">${fmtRp(totals.lembur)}</td><td class="r">${fmtRp(totals.bonus)}</td><td class="r">${fmtRp(totals.tunjangan)}</td>
+<td class="r">${fmtRp(totals.potMakan)}</td><td class="r">${fmtRp(totals.potKasbon)}</td>
+<td class="r">${fmtRp(totals.kotor)}</td><td class="r">${fmtRp(totals.bersih)}</td></tr>
+</tbody></table>
+<div class="place">Darunnajah, &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ${now.getFullYear()}</div>
+<div class="sign-row">
+<div class="sign-box"><div>Penjab Absensi,</div><div class="line"></div><div class="nm">Asep Sulaiman</div></div>
+<div class="sign-box"><div>Diketahui,</div><div class="line"></div><div class="nm">Ust. Muddatsir, S.H.I, M.Pd.</div></div>
+<div class="sign-box"><div>Mengetahui,</div><div class="line"></div><div class="nm">Ust. Giyanto, M.E.</div></div>
+<div class="sign-box"><div>Dihitung,</div><div class="line"></div><div class="nm">Burhanudin</div></div>
+<div class="sign-box"><div>Dikoreksi dan diperiksa</div><div class="line"></div><div class="nm">Ust. Munip Rahman, M.Pd.</div></div>
+</div>
+<script>window.onload=function(){window.print()}<\/script></body></html>`;
+const w=window.open("","_blank");if(w){w.document.write(html);w.document.close();}}
+
 // ══════ LOGIN ══════
 function LoginPage({onLogin,accounts,T}){const[u,setU]=useState("");const[p,setP]=useState("");const[sh,setSh]=useState(false);const[err,setErr]=useState("");const[now,setNow]=useState(new Date());useEffect(()=>{const t=setInterval(()=>setNow(new Date()),1000);return()=>clearInterval(t)},[]);
 const S=useMemo(()=>mkS(T),[T]);const gCSS=useMemo(()=>mkCSS(T),[T]);
@@ -516,7 +586,7 @@ const[umQ,setUmQ]=useState("");
                       <div style={{fontSize:9,color:T.sub,textTransform:"uppercase",letterSpacing:0.5}}>Saldo Keluar</div>
                       <div style={{fontWeight:700,fontSize:14,color:"#c0392b",marginTop:2}}>{fmtRp(keluar)}</div>
                     </div>
-                    <div onClick={e=>e.stopPropagation()}><KebabMenu items={[{icon:I.edit,label:"Edit Nama",onClick:()=>renamePeriode(per)},{icon:I.trash,label:"Hapus Periode",danger:true,onClick:()=>hapusPeriode(per)}]}/></div>
+                    <div onClick={e=>e.stopPropagation()}><KebabMenu items={[{icon:I.print,label:"Print Laporan",onClick:()=>{const empPer=catEmp.filter(emp=>(emp.riwayat||[]).some(r=>r.periode===per));printLaporan(per,curCat,empPer)}},{icon:I.edit,label:"Edit Nama",onClick:()=>renamePeriode(per)},{icon:I.trash,label:"Hapus Periode",danger:true,onClick:()=>hapusPeriode(per)}]}/></div>
                   </div>
                 </div>
                 <div style={{display:"flex",justifyContent:"space-between",marginTop:14,paddingTop:10,borderTop:`1px solid ${T.cb}`}}>
