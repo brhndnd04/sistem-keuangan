@@ -330,6 +330,9 @@ const[empPer,setEmpPer]=useState("Semua");
 const[umPer,setUmPer]=useState(null);
 const[umQ,setUmQ]=useState("");
 const[periodeInfo,setPeriodeInfo]=useState(appData.periodeInfo||{});
+const[pdfModal,setPdfModal]=useState(null);
+const[pdfPekan,setPdfPekan]=useState("");
+const[pdfTgl,setPdfTgl]=useState("");
   const[pengajuan,setPengajuan]=useState(appData.pengajuan||[]);
   const[pgSel,setPgSel]=useState(null);const[pgNF,setPgNF]=useState("");const[editPgId,setEditPgId]=useState(null);
   const[pgF,setPgF]=useState({tipe:"debit",jumlah:"",ket:""});const[editEntId,setEditEntId]=useState(null);const[editEntSaldo,setEditEntSaldo]=useState("");
@@ -592,7 +595,7 @@ const[periodeInfo,setPeriodeInfo]=useState(appData.periodeInfo||{});
                       <div style={{fontSize:9,color:T.sub,textTransform:"uppercase",letterSpacing:0.5}}>Saldo Keluar</div>
                       <div style={{fontWeight:700,fontSize:14,color:"#c0392b",marginTop:2}}>{fmtRp(keluar)}</div>
                     </div>
-                    <div onClick={e=>e.stopPropagation()}><KebabMenu items={[{icon:I.download,label:"Download PDF",onClick:()=>{const empPer=catEmp.filter(emp=>(emp.riwayat||[]).some(r=>r.periode===per));const pi=periodeInfo[per]||{};downloadPDF(per,pi.pekan||"",pi.tglCetak||"",empPer)}},{icon:I.edit,label:"Edit Nama",onClick:()=>renamePeriode(per)},{icon:I.edit,label:"Edit Periode",onClick:()=>{const v=prompt("Edit nama periode:",per);if(v&&v!==per){setEmployees(employees.map(e=>({...e,riwayat:(e.riwayat||[]).map(r=>r.periode===per?{...r,periode:v}:r)})));if(periodeInfo[per]){const pi={...periodeInfo};pi[v]=pi[per];delete pi[per];setPeriodeInfo(pi)}}}},{icon:I.edit,label:"Edit Pekan",onClick:()=>{const pi=periodeInfo[per]||{};const v=prompt("Masukkan Pekan untuk periode "+per+":",pi.pekan||"");if(v!==null)setPeriodeInfo({...periodeInfo,[per]:{...pi,pekan:v}})}},{icon:I.calendar,label:"Edit Tgl Cetak",onClick:()=>{const pi=periodeInfo[per]||{};const v=prompt("Masukkan Tgl Cetak (contoh: Darunnajah, 15 Oktober 2026):",pi.tglCetak||"Darunnajah,");if(v!==null)setPeriodeInfo({...periodeInfo,[per]:{...pi,tglCetak:v}})}},{icon:I.trash,label:"Hapus Periode",danger:true,onClick:()=>hapusPeriode(per)}]}/></div>
+                    <div onClick={e=>e.stopPropagation()}><KebabMenu items={[{icon:I.download,label:"Download PDF",onClick:()=>{const empPer=catEmp.filter(emp=>(emp.riwayat||[]).some(r=>r.periode===per));const pi=periodeInfo[per]||{};setPdfPekan(pi.pekan||"");setPdfTgl(pi.tglCetak||"Darunnajah,");setPdfModal({per,empList:empPer})}},{icon:I.edit,label:"Edit Nama",onClick:()=>renamePeriode(per)},{icon:I.edit,label:"Edit Periode",onClick:()=>{const v=prompt("Edit nama periode:",per);if(v&&v!==per){setEmployees(employees.map(e=>({...e,riwayat:(e.riwayat||[]).map(r=>r.periode===per?{...r,periode:v}:r)})));if(periodeInfo[per]){const pi={...periodeInfo};pi[v]=pi[per];delete pi[per];setPeriodeInfo(pi)}}}},{icon:I.edit,label:"Edit Pekan",onClick:()=>{const pi=periodeInfo[per]||{};const v=prompt("Masukkan Pekan untuk periode "+per+":",pi.pekan||"");if(v!==null)setPeriodeInfo({...periodeInfo,[per]:{...pi,pekan:v}})}},{icon:I.calendar,label:"Edit Tgl Cetak",onClick:()=>{const pi=periodeInfo[per]||{};const v=prompt("Masukkan Tgl Cetak (contoh: Darunnajah, 15 Oktober 2026):",pi.tglCetak||"Darunnajah,");if(v!==null)setPeriodeInfo({...periodeInfo,[per]:{...pi,tglCetak:v}})}},{icon:I.trash,label:"Hapus Periode",danger:true,onClick:()=>hapusPeriode(per)}]}/></div>
                   </div>
                 </div>
                 <div style={{display:"flex",justifyContent:"space-between",marginTop:14,paddingTop:10,borderTop:`1px solid ${T.cb}`}}>
@@ -1016,6 +1019,39 @@ const[periodeInfo,setPeriodeInfo]=useState(appData.periodeInfo||{});
         </div>
       </div>
     </div>)}
+
+  {/* === PDF EDIT MODAL === */}
+  {pdfModal&&(<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999,padding:16}} onClick={()=>setPdfModal(null)}>
+    <div style={{background:T.card,borderRadius:16,padding:24,width:"100%",maxWidth:420,border:`1px solid ${T.cb}`,boxShadow:"0 12px 40px rgba(0,0,0,0.3)"}} onClick={e=>e.stopPropagation()}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
+        <h3 style={{fontSize:16,fontWeight:700,color:T.acL,margin:0}}>📄 Edit Sebelum Download PDF</h3>
+        <button style={{...S.iconBtn,color:T.sub}} onClick={()=>setPdfModal(null)}>{I.x}</button>
+      </div>
+      <div style={{background:T.iBg,borderRadius:10,padding:12,marginBottom:14,border:`1px solid ${T.cb}`}}>
+        <div style={{fontSize:11,color:T.sub,fontWeight:600,marginBottom:2}}>Periode</div>
+        <div style={{fontSize:15,fontWeight:700,color:T.acL}}>{pdfModal.per}</div>
+        <div style={{fontSize:11,color:T.sub,marginTop:2}}>{pdfModal.empList.length} karyawan</div>
+      </div>
+      <div style={{marginBottom:12}}>
+        <label style={{...S.lbl,display:"block",marginBottom:4}}>Pekan</label>
+        <input style={S.input} value={pdfPekan} onChange={e=>setPdfPekan(e.target.value)} placeholder="Contoh: Pekan 1-2"/>
+      </div>
+      <div style={{marginBottom:16}}>
+        <label style={{...S.lbl,display:"block",marginBottom:4}}>Tempat & Tanggal Cetak</label>
+        <input style={S.input} value={pdfTgl} onChange={e=>setPdfTgl(e.target.value)} placeholder="Contoh: Darunnajah, 15 Oktober 2026"/>
+        <div style={{fontSize:10,color:T.sub,marginTop:4}}>Akan muncul di bagian bawah laporan</div>
+      </div>
+      <div style={{display:"flex",gap:8}}>
+        <button style={{...S.btnPri,flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:6}} onClick={()=>{
+          const pi={...periodeInfo,[pdfModal.per]:{...(periodeInfo[pdfModal.per]||{}),pekan:pdfPekan,tglCetak:pdfTgl}};
+          setPeriodeInfo(pi);
+          downloadPDF(pdfModal.per,pdfPekan,pdfTgl,pdfModal.empList);
+          setPdfModal(null);
+        }}>{I.download} Download PDF</button>
+        <button style={{...S.btnSec,flex:0}} onClick={()=>setPdfModal(null)}>Batal</button>
+      </div>
+    </div>
+  </div>)}
 
   </main></div></div>);
 }
