@@ -153,17 +153,20 @@ function buildTotals(rows){return rows.reduce((t,r)=>({lembur:t.lembur+r.lembur,
 function downloadPDF(per,pekan,tglCetak,empList){
 const rows=buildRows(per,empList);
 const totals=buildTotals(rows);
+const LOGO="data:image/png;base64,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";
 const html=`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Laporan-${per}</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Plus Jakarta Sans',sans-serif;color:#1a1a1a;padding:10mm 12mm;font-size:10px}
-@page{size:330mm 216mm landscape;margin:8mm 10mm}
-h2{font-size:14px;font-weight:700;text-align:center;margin:0}
-h3{font-size:11px;font-weight:600;text-align:center;margin:2px 0 10px}
-.meta{margin-bottom:10px;font-size:10px}
+body{font-family:'Times New Roman',Times,serif;color:#1a1a1a;padding:10mm 12mm;font-size:11px}
+@page{size:216mm 330mm portrait;margin:10mm 12mm}
+.header{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:4px}
+.header img{width:60px;height:auto}
+.header-text{text-align:center}
+h2{font-size:15px;font-weight:700;margin:0}
+h3{font-size:12px;font-weight:600;text-align:center;margin:2px 0 10px}
+.meta{margin-bottom:10px;font-size:11px}
 .meta td{padding:2px 6px 2px 0}
-.meta .lb{font-weight:700;width:60px}
+.meta .lb{font-weight:700;width:70px}
 table.main{width:100%;border-collapse:collapse;font-size:9px}
 table.main th{background:#d6eaf8;color:#1a3c34;font-weight:700;padding:5px 4px;border:1px solid #999;text-align:center;white-space:nowrap}
 table.main td{padding:4px 5px;border:1px solid #bbb;white-space:nowrap}
@@ -173,13 +176,16 @@ table.main .l{text-align:left}
 table.main tr:nth-child(even){background:#f7fbff}
 .tot td{background:#d6eaf8!important;font-weight:700}
 .sign-row{display:flex;justify-content:space-between;margin-top:24px;font-size:9px}
-.sign-box{text-align:center;min-width:130px}
-.sign-box .line{margin-top:40px;border-bottom:1px solid #333;width:140px;display:inline-block}
+.sign-box{text-align:center;min-width:100px}
+.sign-box .line{margin-top:40px;border-bottom:1px solid #333;width:120px;display:inline-block}
 .sign-box .nm{font-weight:700;margin-top:3px;font-size:9.5px}
-.place{text-align:right;margin-top:16px;font-size:10px}
+.place{text-align:right;margin-top:16px;font-size:11px}
 @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 </style></head><body>
-<h2>DEPARTEMEN RUMAH TANGGA</h2>
+<div class="header">
+<img src="${LOGO}" alt="Logo DRT"/>
+<div class="header-text"><h2>DEPARTEMEN RUMAH TANGGA</h2></div>
+</div>
 <h3>DAFTAR IHSAN KARYAWAN HARIAN DRT</h3>
 <table class="meta"><tr><td class="lb">PRIODE</td><td>: ${per}</td></tr><tr><td class="lb">PEKAN</td><td>: ${pekan||""}</td></tr></table>
 <table class="main">
@@ -198,7 +204,7 @@ ${rows.map(r=>`<tr>
 <td class="r">${fmtRp(r.potMakan)}</td><td class="r">${fmtRp(r.potKasbon)}</td>
 <td class="r">${fmtRp(r.kotor)}</td><td class="r" style="font-weight:600">${fmtRp(r.bersih)}</td>
 </tr>`).join("")}
-<tr class="tot"><td colspan="5" class="r">TOTAL KESELURUHAN</td>
+<tr class="tot"><td colspan="5" style="text-align:center;font-weight:700">TOTAL KESELURUHAN</td>
 <td class="r">${fmtRp(totals.lembur)}</td><td class="r">${fmtRp(totals.bonus)}</td><td class="r">${fmtRp(totals.tunjangan)}</td>
 <td class="r">${fmtRp(totals.potMakan)}</td><td class="r">${fmtRp(totals.potKasbon)}</td>
 <td class="r">${fmtRp(totals.kotor)}</td><td class="r">${fmtRp(totals.bersih)}</td></tr>
