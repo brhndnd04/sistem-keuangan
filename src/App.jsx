@@ -214,21 +214,6 @@ ${rows.map(r=>`<tr>
 <script>window.onload=function(){window.print()}<\/script></body></html>`;
 const w=window.open("","_blank");if(w){w.document.write(html);w.document.close();}}
 
-function downloadExcel(per,pekan,tglCetak,empList){
-const rows=buildRows(per,empList);
-const totals=buildTotals(rows);
-const fR=(v)=>typeof v==="number"?v:"";
-let csv="﻿";
-csv+="DEPARTEMEN RUMAH TANGGA\n";
-csv+="DAFTAR IHSAN KARYAWAN HARIAN DRT\n\n";
-csv+="PRIODE:,"+per+"\n";
-csv+="PEKAN:,"+(pekan||"")+"\n\n";
-csv+="NO,NAMA,JABATAN,IHSAN PERHARI,TOTAL MASUK,LEMBUR,BONUS,TUNJANGAN,MAKAN,KASBON,KOTOR,BERSIH\n";
-rows.forEach(r=>{csv+=`${r.no},"${r.nama}","${r.jabatan}",${fR(r.ihsan)},${r.masuk},${fR(r.lembur)},${fR(r.bonus)},${fR(r.tunjangan)},${fR(r.potMakan)},${fR(r.potKasbon)},${fR(r.kotor)},${fR(r.bersih)}\n`});
-csv+=`,,,,TOTAL KESELURUHAN,${fR(totals.lembur)},${fR(totals.bonus)},${fR(totals.tunjangan)},${fR(totals.potMakan)},${fR(totals.potKasbon)},${fR(totals.kotor)},${fR(totals.bersih)}\n`;
-csv+="\n\n"+(tglCetak||"Darunnajah,")+"\n";
-const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});
-const link=document.createElement("a");link.href=URL.createObjectURL(blob);link.download=`Laporan-${per}.csv`;link.click();URL.revokeObjectURL(link.href);}
 
 // ══════ LOGIN ══════
 function LoginPage({onLogin,accounts,T}){const[u,setU]=useState("");const[p,setP]=useState("");const[sh,setSh]=useState(false);const[err,setErr]=useState("");const[now,setNow]=useState(new Date());useEffect(()=>{const t=setInterval(()=>setNow(new Date()),1000);return()=>clearInterval(t)},[]);
@@ -607,7 +592,7 @@ const[periodeInfo,setPeriodeInfo]=useState(appData.periodeInfo||{});
                       <div style={{fontSize:9,color:T.sub,textTransform:"uppercase",letterSpacing:0.5}}>Saldo Keluar</div>
                       <div style={{fontWeight:700,fontSize:14,color:"#c0392b",marginTop:2}}>{fmtRp(keluar)}</div>
                     </div>
-                    <div onClick={e=>e.stopPropagation()}><KebabMenu items={[{icon:I.download,label:"Download PDF",onClick:()=>{const empPer=catEmp.filter(emp=>(emp.riwayat||[]).some(r=>r.periode===per));const pi=periodeInfo[per]||{};downloadPDF(per,pi.pekan||"",pi.tglCetak||"",empPer)}},{icon:I.download,label:"Download Excel",onClick:()=>{const empPer=catEmp.filter(emp=>(emp.riwayat||[]).some(r=>r.periode===per));const pi=periodeInfo[per]||{};downloadExcel(per,pi.pekan||"",pi.tglCetak||"",empPer)}},{icon:I.edit,label:"Edit Nama",onClick:()=>renamePeriode(per)},{icon:I.edit,label:"Edit Pekan",onClick:()=>{const pi=periodeInfo[per]||{};const v=prompt("Masukkan Pekan untuk periode "+per+":",pi.pekan||"");if(v!==null)setPeriodeInfo({...periodeInfo,[per]:{...pi,pekan:v}})}},{icon:I.calendar,label:"Edit Tgl Cetak",onClick:()=>{const pi=periodeInfo[per]||{};const v=prompt("Masukkan Tgl Cetak (contoh: Darunnajah, 15 Oktober 2026):",pi.tglCetak||"Darunnajah,");if(v!==null)setPeriodeInfo({...periodeInfo,[per]:{...pi,tglCetak:v}})}},{icon:I.trash,label:"Hapus Periode",danger:true,onClick:()=>hapusPeriode(per)}]}/></div>
+                    <div onClick={e=>e.stopPropagation()}><KebabMenu items={[{icon:I.download,label:"Download PDF",onClick:()=>{const empPer=catEmp.filter(emp=>(emp.riwayat||[]).some(r=>r.periode===per));const pi=periodeInfo[per]||{};downloadPDF(per,pi.pekan||"",pi.tglCetak||"",empPer)}},{icon:I.edit,label:"Edit Nama",onClick:()=>renamePeriode(per)},{icon:I.edit,label:"Edit Periode",onClick:()=>{const v=prompt("Edit nama periode:",per);if(v&&v!==per){setEmployees(employees.map(e=>({...e,riwayat:(e.riwayat||[]).map(r=>r.periode===per?{...r,periode:v}:r)})));if(periodeInfo[per]){const pi={...periodeInfo};pi[v]=pi[per];delete pi[per];setPeriodeInfo(pi)}}}},{icon:I.edit,label:"Edit Pekan",onClick:()=>{const pi=periodeInfo[per]||{};const v=prompt("Masukkan Pekan untuk periode "+per+":",pi.pekan||"");if(v!==null)setPeriodeInfo({...periodeInfo,[per]:{...pi,pekan:v}})}},{icon:I.calendar,label:"Edit Tgl Cetak",onClick:()=>{const pi=periodeInfo[per]||{};const v=prompt("Masukkan Tgl Cetak (contoh: Darunnajah, 15 Oktober 2026):",pi.tglCetak||"Darunnajah,");if(v!==null)setPeriodeInfo({...periodeInfo,[per]:{...pi,tglCetak:v}})}},{icon:I.trash,label:"Hapus Periode",danger:true,onClick:()=>hapusPeriode(per)}]}/></div>
                   </div>
                 </div>
                 <div style={{display:"flex",justifyContent:"space-between",marginTop:14,paddingTop:10,borderTop:`1px solid ${T.cb}`}}>
