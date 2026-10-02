@@ -608,8 +608,8 @@ const[pdfTgl,setPdfTgl]=useState("");
           {!periodeList.length?<div style={{...S.card,textAlign:"center",padding:"40px 20px"}}><div style={{fontSize:40,marginBottom:12}}>📁</div><div style={{fontSize:14,color:T.sub,marginBottom:8}}>{!catEmp.length?`Belum ada karyawan ${curCat}`:`Belum ada data periode untuk ${curCat}`}</div><div style={{fontSize:12,color:T.sub}}>{!catEmp.length?`Tambahkan karyawan terlebih dahulu di Master Karyawan dan pilih kategori "${curCat}".`:`Klik "Tambah Periode" untuk membuat folder periode baru.`}</div></div>
           :<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:12}}>
             {periodeList.map(per=>{const keluar=perKeluar(per);const dibayar=perDibayar(per);const empC=perEmpCount(per);return(
-              <div key={per} onClick={()=>openFolder(per)} style={{background:T.iBg,borderRadius:12,padding:"18px 20px",border:`1px solid ${T.cb}`,cursor:"pointer",transition:"all 0.2s",position:"relative",overflow:"hidden"}}>
-                <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:"linear-gradient(90deg, #6c63ff, #48c6ef)"}}/>
+              <div key={per} onClick={()=>openFolder(per)} style={{background:T.iBg,borderRadius:12,padding:"18px 20px",border:`1px solid ${T.cb}`,cursor:"pointer",transition:"all 0.2s",position:"relative"}}>
+                <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:"linear-gradient(90deg, #6c63ff, #48c6ef)",borderRadius:"12px 12px 0 0"}}/>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
                   <div style={{display:"flex",alignItems:"center",gap:10}}>
                     <div style={{fontSize:28,opacity:0.8}}>📁</div>
