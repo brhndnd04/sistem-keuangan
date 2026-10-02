@@ -159,9 +159,9 @@ const html=`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Laporan-${pe
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Times New Roman',Times,serif;color:#1a1a1a;padding:10mm 12mm;font-size:11px}
 @page{size:216mm 330mm portrait;margin:0}
-.header{display:flex;align-items:center;margin-bottom:4px}
-.header img{width:70px;height:auto;margin-left:12px}
-.header-text{flex:1;text-align:center}
+.header{position:relative;text-align:center;margin-bottom:4px}
+.header img{position:absolute;right:0;top:50%;transform:translateY(-50%);width:70px;height:auto}
+.header-text{text-align:center}
 h2{font-size:15px;font-weight:700;margin:0}
 h3{font-size:12px;font-weight:600;text-align:center;margin:2px 0 10px}
 .meta{margin-bottom:10px;font-size:11px}
