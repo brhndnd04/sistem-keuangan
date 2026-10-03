@@ -157,7 +157,7 @@ const LOGO="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMgAAACGCAYAAACYCsWCAA
 const html=`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Laporan-${per}</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Times New Roman',Times,serif;color:#1a1a1a;padding:15mm 18mm;font-size:12pt}
+body{font-family:'Times New Roman',Times,serif;color:#1a1a1a;padding:20mm 25mm;font-size:12pt}
 @page{size:216mm 330mm portrait;margin:0}
 .header{position:relative;text-align:center;margin-bottom:4px}
 .header img{position:absolute;right:0;top:50%;transform:translateY(-50%);width:70px;height:auto}
