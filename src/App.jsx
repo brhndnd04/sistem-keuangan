@@ -157,17 +157,17 @@ const LOGO="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMgAAACGCAYAAACYCsWCAA
 const html=`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Laporan-${per}</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Times New Roman',Times,serif;color:#1a1a1a;padding:10mm 12mm;font-size:11px}
+body{font-family:'Times New Roman',Times,serif;color:#1a1a1a;padding:10mm 12mm;font-size:12pt}
 @page{size:216mm 330mm portrait;margin:0}
 .header{position:relative;text-align:center;margin-bottom:4px}
 .header img{position:absolute;right:0;top:50%;transform:translateY(-50%);width:70px;height:auto}
 .header-text{text-align:center}
-h2{font-size:15px;font-weight:700;margin:0}
-h3{font-size:12px;font-weight:600;text-align:center;margin:2px 0 10px}
-.meta{margin-bottom:10px;font-size:11px}
+h2{font-size:16pt;font-weight:700;margin:0}
+h3{font-size:13pt;font-weight:600;text-align:center;margin:2px 0 10px}
+.meta{margin-bottom:10px;font-size:12pt}
 .meta td{padding:2px 6px 2px 0}
 .meta .lb{font-weight:700;width:70px}
-table.main{width:100%;border-collapse:collapse;font-size:9px}
+table.main{width:100%;border-collapse:collapse;font-size:10pt}
 table.main th{background:#d6eaf8;color:#1a3c34;font-weight:700;padding:5px 4px;border:1px solid #999;text-align:center;white-space:nowrap}
 table.main td{padding:4px 5px;border:1px solid #bbb;white-space:nowrap}
 table.main .r{text-align:right}
@@ -175,11 +175,11 @@ table.main .c{text-align:center}
 table.main .l{text-align:left}
 table.main tr:nth-child(even){background:#f7fbff}
 .tot td{background:#d6eaf8!important;font-weight:700}
-.sign-row{display:flex;justify-content:space-between;margin-top:24px;font-size:9px}
+.sign-row{display:flex;justify-content:space-between;margin-top:24px;font-size:10pt}
 .sign-box{text-align:center;min-width:100px}
 .sign-box .line{margin-top:40px;border-bottom:1px solid #333;width:120px;display:inline-block}
-.sign-box .nm{font-weight:700;margin-top:3px;font-size:9.5px}
-.place{text-align:right;margin-top:16px;font-size:11px}
+.sign-box .nm{font-weight:700;margin-top:3px;font-size:10pt}
+.place{text-align:right;margin-top:16px;font-size:12pt}
 @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 </style></head><body>
 <div class="header">
