@@ -169,6 +169,7 @@ h3{font-size:13pt;font-weight:600;text-align:center;margin:2px 0 10px}
 .meta .lb{font-weight:700;width:70px}
 table.main{width:100%;border-collapse:collapse;font-size:10pt;page-break-inside:auto}
 table.main thead{display:table-header-group}
+table.main .pg-spacer th{border:none;background:transparent!important;height:12mm;padding:0;line-height:0}
 table.main tbody{display:table-row-group}
 table.main tr{page-break-inside:avoid}
 table.main th{background:#d6eaf8;color:#1a3c34;font-weight:700;padding:5px 4px;border:1px solid #999;text-align:center;white-space:nowrap}
@@ -193,6 +194,7 @@ table.main tr:nth-child(even){background:#f7fbff}
 <table class="meta"><tr><td class="lb">PRIODE</td><td>: ${per}</td></tr><tr><td class="lb">PEKAN</td><td>: ${pekan||""}</td></tr></table>
 <table class="main">
 <thead>
+<tr class="pg-spacer"><th colspan="12"></th></tr>
 <tr>
 <th rowspan="2">NO</th><th rowspan="2">NAMA</th><th rowspan="2">JABATAN</th><th rowspan="2">IHSAN<br>PERHARI</th><th rowspan="2">TOTAL MASUK</th>
 <th colspan="3">PENDAPATAN</th><th colspan="2">POTONGAN</th><th colspan="2">TOTAL</th>
