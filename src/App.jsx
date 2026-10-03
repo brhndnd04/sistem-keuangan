@@ -169,7 +169,8 @@ h3{font-size:13pt;font-weight:600;text-align:center;margin:2px 0 10px}
 .meta .lb{font-weight:700;width:70px}
 table.main{width:100%;border-collapse:collapse;font-size:10pt;page-break-inside:auto}
 table.main thead{display:table-header-group}
-table.main .pg-spacer th{border:none;background:transparent!important;height:12mm;padding:0;line-height:0}
+table.main tfoot{display:table-footer-group}
+table.main .pg-spacer th,table.main .pg-spacer-bot td{border:none;background:transparent!important;height:12mm;padding:0;line-height:0}
 table.main tbody{display:table-row-group}
 table.main tr{page-break-inside:avoid}
 table.main th{background:#d6eaf8;color:#1a3c34;font-weight:700;padding:5px 4px;border:1px solid #999;text-align:center;white-space:nowrap}
@@ -213,7 +214,9 @@ ${rows.map(r=>`<tr>
 <td class="r">${fmtRp(totals.lembur)}</td><td class="r">${fmtRp(totals.bonus)}</td><td class="r">${fmtRp(totals.tunjangan)}</td>
 <td class="r">${fmtRp(totals.potMakan)}</td><td class="r">${fmtRp(totals.potKasbon)}</td>
 <td class="r">${fmtRp(totals.kotor)}</td><td class="r">${fmtRp(totals.bersih)}</td></tr>
-</tbody></table>
+</tbody>
+<tfoot><tr class="pg-spacer-bot"><td colspan="12"></td></tr></tfoot>
+</table>
 <div class="place">${tglCetak||"Darunnajah,"}</div>
 <div class="sign-row">
 <div class="sign-box"><div>Penjab Absensi,</div><div class="line"></div><div class="nm">Asep Sulaiman</div></div>
