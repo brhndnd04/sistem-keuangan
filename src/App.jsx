@@ -157,17 +157,20 @@ const LOGO="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMgAAACGCAYAAACYCsWCAA
 const html=`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Laporan-${per}</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Times New Roman',Times,serif;color:#1a1a1a;margin:0;padding:0;font-size:12pt}
-@page{size:216mm 330mm portrait;margin:20mm 25mm}
-.header{position:relative;text-align:center;margin-bottom:4px}
-.header img{position:absolute;right:0;top:50%;transform:translateY(-50%);width:70px;height:auto}
+body{font-family:'Times New Roman',Times,serif;color:#1a1a1a;margin:0;padding:20mm 25mm;font-size:12pt}
+@page{size:216mm 330mm portrait;margin:0}
+.header{position:relative;text-align:center;margin-bottom:4px;padding:8px 0}
+.header img{position:absolute;right:0;top:50%;transform:translateY(-50%);width:60px;height:auto}
 .header-text{text-align:center}
 h2{font-size:16pt;font-weight:700;margin:0}
 h3{font-size:13pt;font-weight:600;text-align:center;margin:2px 0 10px}
 .meta{margin-bottom:10px;font-size:12pt}
 .meta td{padding:2px 6px 2px 0}
 .meta .lb{font-weight:700;width:70px}
-table.main{width:100%;border-collapse:collapse;font-size:10pt}
+table.main{width:100%;border-collapse:collapse;font-size:10pt;page-break-inside:auto}
+table.main thead{display:table-header-group}
+table.main tbody{display:table-row-group}
+table.main tr{page-break-inside:avoid}
 table.main th{background:#d6eaf8;color:#1a3c34;font-weight:700;padding:5px 4px;border:1px solid #999;text-align:center;white-space:nowrap}
 table.main td{padding:4px 5px;border:1px solid #bbb;white-space:nowrap}
 table.main .r{text-align:right}
